@@ -1,10 +1,7 @@
 "use client";
 
-import useAnalytics from "@/app/lib/useAnalytics";
 
 export default function Home() {
-  // Track visits for this site
-  useAnalytics("your-website-id"); // e.g. "arc-tech"
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black px-6">

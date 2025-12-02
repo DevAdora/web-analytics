@@ -128,80 +128,114 @@ export default function MultiSiteDashboard() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a] text-white p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+    <main
+      className="min-h-screen bg-[#050505] text-white p-4 md:p-8 
+        font-sans relative overflow-hidden"
+    >
+      {/* Scanline Overlay */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.05] bg-[linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[length:100%_2px]" />
+
+      <div className="max-w-7xl mx-auto relative">
+        {/* --- Header Panel --- */}
+        <div
+          className="flex flex-col md:flex-row md:items-center md:justify-between mb-10
+            bg-[#0d0d0d]/70 backdrop-blur-xl border border-[#1f1f1f] p-6 rounded-2xl shadow-lg
+            shadow-blue-500/5"
+        >
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              Multi-Site Analytics Dashboard
+            <h1
+              className="text-4xl md:text-5xl font-bold mb-2
+                text-transparent bg-clip-text
+                bg-gradient-to-r from-cyan-300 to-purple-400 drop-shadow-[0_0_12px_rgba(0,255,255,0.3)]"
+            >
+              NMS Analytics Control Center
             </h1>
-            <p className="text-gray-400 text-sm">
-              Real-time insights • Last updated: {formatTime(lastUpdated)}
+
+            <p className="text-gray-400 text-sm tracking-wide flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-400 animate-pulse rounded-full" />
+              Synced: {formatTime(lastUpdated)}
             </p>
           </div>
 
-          <div className="flex items-center gap-4 mt-4 md:mt-0">
+          <div className="flex items-center gap-4 mt-6 md:mt-0">
+            {/* Live Toggle */}
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                autoRefresh
-                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                  : "bg-gray-800 text-gray-400 border border-gray-700"
-              }`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all border
+                flex items-center gap-2 shadow-lg hover:shadow-xl
+                ${
+                  autoRefresh
+                    ? "bg-[#0f2517] text-green-300 border-green-600/40 shadow-green-400/10"
+                    : "bg-[#111111] text-gray-400 border-gray-700 hover:border-gray-500"
+                }`}
             >
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                {autoRefresh ? "Live" : "Paused"}
-              </div>
+              <Activity className="w-4 h-4" />
+              {autoRefresh ? "Live Mode" : "Paused"}
             </button>
 
+            {/* Refresh Button */}
             <button
               onClick={fetchAnalytics}
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700
+                hover:from-blue-500 hover:to-indigo-600 text-white text-sm font-medium
+                transition-all shadow-lg hover:shadow-blue-500/20
+                disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              <div className="flex items-center gap-2">
-                <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                />
-                Refresh
-              </div>
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
+              Refresh
             </button>
-            <button onClick={() => router.push("/dashboard/add")} className="...">
-              <div className="flex items-center gap-2">
-                <PlusCircle className="w-4 h-4" />
-                Add
-              </div>
+
+            {/* Add Button */}
+            <button
+              onClick={() => router.push("/dashboard/add")}
+              className="px-5 py-2.5 rounded-xl
+              bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500
+              text-white text-sm font-medium transition-all shadow-lg hover:shadow-purple-500/20 
+              flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Add
             </button>
           </div>
         </div>
 
-        {/* Site Selector */}
-        <div className="mb-6 bg-[#1a1a1a] p-4 rounded-xl border border-gray-800">
-          <label className="block text-sm font-medium text-gray-300 mb-3">
-            Select Website
+        {/* --- Site Selector Panel --- */}
+        <div
+          className="mb-8 bg-[#0d0d0d]/60 backdrop-blur-md p-5 rounded-2xl border border-[#1f1f1f]
+            shadow-inner shadow-black/40"
+        >
+          <label className="block text-sm font-medium text-gray-300 mb-4 tracking-wide">
+            Select Target Site
           </label>
+
           <div className="flex gap-3 overflow-x-auto pb-2">
             <button
               onClick={() => setSelectedSite("all")}
-              className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap flex items-center gap-2 ${
-                selectedSite === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-[#0a0a0a] text-gray-400 border border-gray-700 hover:border-gray-600"
-              }`}
+              className={`px-5 py-3 rounded-xl whitespace-nowrap flex items-center gap-2
+                transition-all text-sm border shadow-lg
+                ${
+                  selectedSite === "all"
+                    ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white border-transparent shadow-cyan-500/20"
+                    : "bg-[#0a0a0a] text-gray-400 border-gray-700 hover:border-gray-500"
+                }`}
             >
               <BarChart3 className="w-4 h-4" />
               All Sites
             </button>
+
             {sites.map((site) => (
               <button
                 key={site.id}
                 onClick={() => setSelectedSite(site.site_id)}
-                className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap flex items-center gap-2 ${
+                className={`px-5 py-3 rounded-xl whitespace-nowrap flex items-center gap-2
+                transition-all text-sm border shadow-lg
+                ${
                   selectedSite === site.site_id
-                    ? "bg-blue-600 text-white"
-                    : "bg-[#0a0a0a] text-gray-400 border border-gray-700 hover:border-gray-600"
+                    ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white border-transparent shadow-pink-500/20"
+                    : "bg-[#0a0a0a] text-gray-400 border-gray-700 hover:border-gray-500"
                 }`}
               >
                 <Globe className="w-4 h-4" />
@@ -211,14 +245,17 @@ export default function MultiSiteDashboard() {
           </div>
         </div>
 
-        {/* Loading State */}
+        {/* --- Loading Spinner --- */}
         {loading && !data && (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div
+              className="animate-spin rounded-full h-12 w-12 
+              border-t-2 border-b-2 border-cyan-400"
+            ></div>
           </div>
         )}
 
-        {/* Analytics Display */}
+        {/* --- Analytics Display --- */}
         {!loading && data && !(data as any)?.error && (
           <>
             {selectedSite === "all" && (data as any).type === "all" ? (
@@ -232,10 +269,10 @@ export default function MultiSiteDashboard() {
           </>
         )}
 
-        {/* Error State */}
+        {/* --- Error State --- */}
         {!loading && (data as any)?.error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-            <p className="text-red-400 font-medium">
+            <p className="text-red-400 font-medium text-lg">
               Error: {(data as any).error}
             </p>
           </div>
@@ -245,7 +282,6 @@ export default function MultiSiteDashboard() {
   );
 }
 
-// All Sites Overview
 function AllSitesView({
   data,
   sites,
