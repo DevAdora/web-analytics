@@ -9,7 +9,7 @@ interface TrackingOptions {
 }
 
 export default function useAnalytics(
-  siteId: string, 
+  siteId: string,
   options: TrackingOptions = {}
 ) {
   const {
@@ -42,7 +42,6 @@ export default function useAnalytics(
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(trackingData),
-          // Don't wait for response to avoid blocking
           keepalive: true,
         });
 
@@ -55,7 +54,7 @@ export default function useAnalytics(
         }
       } catch (error) {
         console.error(`❌ Analytics tracking error (attempt ${attempt}):`, error);
-        
+
         // Retry logic
         if (attempt < retryAttempts) {
           setTimeout(() => {
@@ -69,6 +68,7 @@ export default function useAnalytics(
     const timeoutId = setTimeout(() => {
       trackPageView();
     }, 100);
+
 
     return () => clearTimeout(timeoutId);
   }, [siteId, enableConsoleLog, retryAttempts, retryDelay]);
