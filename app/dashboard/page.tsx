@@ -9,7 +9,9 @@ import {
   RefreshCw,
   Globe,
   BarChart3,
+  PlusCircle,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Site {
   id: string;
@@ -61,6 +63,7 @@ interface AllSitesAnalytics {
 type AnalyticsResponse = SingleSiteAnalytics | AllSitesAnalytics;
 
 export default function MultiSiteDashboard() {
+  const router = useRouter();
   const [sites, setSites] = useState<Site[]>([]);
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
@@ -163,6 +166,12 @@ export default function MultiSiteDashboard() {
                   className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
                 />
                 Refresh
+              </div>
+            </button>
+            <button onClick={() => router.push("/dashboard/add")} className="...">
+              <div className="flex items-center gap-2">
+                <PlusCircle className="w-4 h-4" />
+                Add
               </div>
             </button>
           </div>
