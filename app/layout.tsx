@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -24,6 +25,45 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* 📊 Analytics Tracking Script */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // ⚠️ CHANGE THIS: Which website is this?
+                // For Arkitech: 'arkitech'
+                // For Passion Fashion: 'passion-fashion'
+                // For Devadora Portfolio: 'devadora'
+                const SITE_ID = 'arkitech'; 
+                
+                // ✅ CORRECT: Points to /api/track endpoint
+                const ANALYTICS_URL = 'https://web-analytics-tan.vercel.app/api/track';
+                
+                function trackPageView() {
+                  fetch(ANALYTICS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      siteId: SITE_ID,
+                      path: window.location.pathname,
+                      referrer: document.referrer || '',
+                      userAgent: navigator.userAgent
+                    }),
+                    keepalive: true
+                  }).catch(err => console.error('Analytics error:', err));
+                }
+                
+                if (document.readyState === 'complete') {
+                  trackPageView();
+                } else {
+                  window.addEventListener('load', trackPageView);
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
