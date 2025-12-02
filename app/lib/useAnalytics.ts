@@ -12,7 +12,7 @@ export default function useAnalytics(siteId: string) {
 
         const trackPageView = async () => {
             try {
-                await fetch('https://localhost:3000/api/track', {
+                await fetch('https://web-analytics-tan.vercel.app/api/track', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
