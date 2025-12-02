@@ -1,99 +1,530 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  Activity,
+  Users,
+  Eye,
+  TrendingUp,
+  RefreshCw,
+  Globe,
+  BarChart3,
+} from "lucide-react";
+
+interface Site {
+  id: string;
+  site_id: string;
+  name: string;
+  domain: string;
+  created_at: string;
+  is_active: boolean;
+}
 
 interface TopPage {
   path: string;
   count: number;
 }
 
-interface AnalyticsResponse {
+interface ReferrerData {
+  referrer: string;
+  count: number;
+}
+
+interface TimeSeriesData {
+  date: string;
+  views: number;
+}
+
+interface SingleSiteAnalytics {
+  siteId: string;
+  totalPageViews: number;
+  uniqueVisitors: number;
+  topPages: TopPage[];
+  topReferrers?: ReferrerData[];
+  timeSeriesData?: TimeSeriesData[];
+  bounceRate?: number;
+}
+
+interface SiteStats {
   siteId: string;
   totalPageViews: number;
   uniqueVisitors: number;
   topPages: TopPage[];
 }
 
-export default function DashboardPage() {
+interface AllSitesAnalytics {
+  type: "all";
+  sites: SiteStats[];
+  totalSites: number;
+}
+
+type AnalyticsResponse = SingleSiteAnalytics | AllSitesAnalytics;
+
+export default function MultiSiteDashboard() {
+  const [sites, setSites] = useState<Site[]>([]);
+  const [selectedSite, setSelectedSite] = useState<string>("all");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [siteId, setSiteId] = useState("arc-tech");
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      setLoading(true);
-      const res = await fetch(`/api/analytics?siteId=${siteId}`);
+  const fetchSites = async () => {
+    try {
+      const res = await fetch("/api/sites");
+      const json = await res.json();
+      setSites(json.sites || []);
+    } catch (error) {
+      console.error("Failed to fetch sites:", error);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/analytics?siteId=${selectedSite}`);
       const json = await res.json();
       setData(json);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Failed to fetch analytics:", error);
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
+    fetchSites();
+  }, []);
+
+  useEffect(() => {
     fetchAnalytics();
-  }, [siteId]);
+  }, [selectedSite]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      fetchAnalytics();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [selectedSite, autoRefresh]);
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  const getSiteName = (siteId: string) => {
+    const site = sites.find((s) => s.site_id === siteId);
+    return site ? site.name : siteId;
+  };
 
   return (
-    <main className="min-h-screen bg-[#080807] text-white p-8 font-onest">
-      <h1 className="text-3xl md:text-4xl font-bold mb-6">
-        Analytics Dashboard
-      </h1>
+    <main className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a] text-white p-4 md:p-8 font-sans">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              Multi-Site Analytics Dashboard
+            </h1>
+            <p className="text-gray-400 text-sm">
+              Real-time insights • Last updated: {formatTime(lastUpdated)}
+            </p>
+          </div>
 
-      <div className="mb-6">
-        <label className="mr-2 text-sm uppercase tracking-wide">Site ID:</label>
-        <input
-          value={siteId}
-          onChange={(e) => setSiteId(e.target.value)}
-          className="px-3 py-2 rounded bg-[#111] border border-gray-700 text-sm"
+          <div className="flex items-center gap-4 mt-4 md:mt-0">
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                autoRefresh
+                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                  : "bg-gray-800 text-gray-400 border border-gray-700"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                {autoRefresh ? "Live" : "Paused"}
+              </div>
+            </button>
+
+            <button
+              onClick={fetchAnalytics}
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="flex items-center gap-2">
+                <RefreshCw
+                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Site Selector */}
+        <div className="mb-6 bg-[#1a1a1a] p-4 rounded-xl border border-gray-800">
+          <label className="block text-sm font-medium text-gray-300 mb-3">
+            Select Website
+          </label>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            <button
+              onClick={() => setSelectedSite("all")}
+              className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap flex items-center gap-2 ${
+                selectedSite === "all"
+                  ? "bg-blue-600 text-white"
+                  : "bg-[#0a0a0a] text-gray-400 border border-gray-700 hover:border-gray-600"
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              All Sites
+            </button>
+            {sites.map((site) => (
+              <button
+                key={site.id}
+                onClick={() => setSelectedSite(site.site_id)}
+                className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap flex items-center gap-2 ${
+                  selectedSite === site.site_id
+                    ? "bg-blue-600 text-white"
+                    : "bg-[#0a0a0a] text-gray-400 border border-gray-700 hover:border-gray-600"
+                }`}
+              >
+                <Globe className="w-4 h-4" />
+                {site.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {loading && !data && (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+
+        {/* Analytics Display */}
+        {!loading && data && !(data as any)?.error && (
+          <>
+            {selectedSite === "all" && (data as any).type === "all" ? (
+              <AllSitesView data={data as AllSitesAnalytics} sites={sites} />
+            ) : (
+              <SingleSiteView
+                data={data as SingleSiteAnalytics}
+                autoRefresh={autoRefresh}
+              />
+            )}
+          </>
+        )}
+
+        {/* Error State */}
+        {!loading && (data as any)?.error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
+            <p className="text-red-400 font-medium">
+              Error: {(data as any).error}
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
+// All Sites Overview
+function AllSitesView({
+  data,
+  sites,
+}: {
+  data: AllSitesAnalytics;
+  sites: Site[];
+}) {
+  const getSiteName = (siteId: string) => {
+    const site = sites.find((s) => s.site_id === siteId);
+    return site ? site.name : siteId;
+  };
+
+  const getSiteDomain = (siteId: string) => {
+    const site = sites.find((s) => s.site_id === siteId);
+    return site?.domain || "N/A";
+  };
+
+  const totalViews = data.sites.reduce((acc, s) => acc + s.totalPageViews, 0);
+  const totalVisitors = data.sites.reduce(
+    (acc, s) => acc + s.uniqueVisitors,
+    0
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <MetricCard
+          icon={<Globe className="w-6 h-6" />}
+          label="Total Sites"
+          value={data.totalSites}
+          subtitle="Active websites"
+          color="purple"
+        />
+        <MetricCard
+          icon={<Eye className="w-6 h-6" />}
+          label="Total Page Views"
+          value={totalViews}
+          subtitle="Across all sites"
+          color="blue"
+        />
+        <MetricCard
+          icon={<Users className="w-6 h-6" />}
+          label="Total Visitors"
+          value={totalVisitors}
+          subtitle="Unique visitors"
+          color="green"
         />
       </div>
 
-      {loading && <p>Loading...</p>}
+      {/* Sites Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {data.sites.map((site) => (
+          <div
+            key={site.siteId}
+            className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-all"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                  <Globe className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    {getSiteName(site.siteId)}
+                  </h3>
+                  <p className="text-xs text-gray-500 truncate max-w-[180px]">
+                    {getSiteDomain(site.siteId)}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-      {!loading && data && !data.error && (
-        <div className="space-y-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-[#111] p-4 rounded-xl">
-              <p className="text-xs text-gray-400 uppercase tracking-wide">
-                Total Page Views (7d)
-              </p>
-              <p className="text-2xl font-semibold">{data.totalPageViews}</p>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Page Views</span>
+                <span className="text-2xl font-bold text-white">
+                  {site.totalPageViews.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Visitors</span>
+                <span className="text-2xl font-bold text-white">
+                  {site.uniqueVisitors.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Pages/Visitor</span>
+                <span className="text-lg font-semibold text-gray-300">
+                  {(site.totalPageViews / (site.uniqueVisitors || 1)).toFixed(
+                    1
+                  )}
+                </span>
+              </div>
             </div>
-            <div className="bg-[#111] p-4 rounded-xl">
-              <p className="text-xs text-gray-400 uppercase tracking-wide">
-                Unique Visitors (7d)
-              </p>
-              <p className="text-2xl font-semibold">{data.uniqueVisitors}</p>
-            </div>
-          </div>
 
-          <div>
-            <h2 className="text-xl font-semibold mb-3">Top Pages</h2>
-            <div className="bg-[#111] rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-black/40">
-                  <tr>
-                    <th className="text-left px-4 py-2">Path</th>
-                    <th className="text-left px-4 py-2">Views</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.topPages.map((page) => (
-                    <tr key={page.path} className="border-t border-white/5">
-                      <td className="px-4 py-2">{page.path}</td>
-                      <td className="px-4 py-2">{page.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Top Page */}
+            {site.topPages.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-800">
+                <p className="text-xs text-gray-500 mb-2">Top Page</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-300 truncate flex-1">
+                    {site.topPages[0].path}
+                  </span>
+                  <span className="text-sm font-semibold text-blue-400 ml-2">
+                    {site.topPages[0].count}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Single Site View
+function SingleSiteView({
+  data,
+  autoRefresh,
+}: {
+  data: SingleSiteAnalytics;
+  autoRefresh: boolean;
+}) {
+  return (
+    <div className="space-y-6">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          icon={<Eye className="w-6 h-6" />}
+          label="Total Page Views"
+          value={data.totalPageViews}
+          subtitle="Last 7 days"
+          color="blue"
+        />
+        <MetricCard
+          icon={<Users className="w-6 h-6" />}
+          label="Unique Visitors"
+          value={data.uniqueVisitors}
+          subtitle="Last 7 days"
+          color="purple"
+        />
+        <MetricCard
+          icon={<TrendingUp className="w-6 h-6" />}
+          label="Avg. Pages/Visitor"
+          value={(data.totalPageViews / (data.uniqueVisitors || 1)).toFixed(1)}
+          subtitle="Engagement metric"
+          color="green"
+        />
+        <MetricCard
+          icon={<Activity className="w-6 h-6" />}
+          label="Active Now"
+          value={autoRefresh ? "Live" : "Paused"}
+          subtitle="Real-time tracking"
+          color="orange"
+          isText
+        />
+      </div>
+
+      {/* Top Pages Table */}
+      <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-800">
+          <h2 className="text-xl font-semibold">Top Pages</h2>
+          <p className="text-sm text-gray-400 mt-1">
+            Most visited pages in the last 7 days
+          </p>
         </div>
-      )}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-[#111111]">
+              <tr>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Path
+                </th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Views
+                </th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  % of Total
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {data.topPages.length > 0 ? (
+                data.topPages.map((page, index) => (
+                  <tr
+                    key={page.path}
+                    className="hover:bg-[#222222] transition-colors"
+                  >
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 font-mono text-xs">
+                          #{index + 1}
+                        </span>
+                        <span className="text-gray-200">{page.path}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-white">
+                      {page.count.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-800 rounded-full h-2 max-w-[100px]">
+                          <div
+                            className="bg-blue-500 h-2 rounded-full transition-all"
+                            style={{
+                              width: `${
+                                (page.count / data.totalPageViews) * 100
+                              }%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-gray-400 min-w-[45px]">
+                          {((page.count / data.totalPageViews) * 100).toFixed(
+                            1
+                          )}
+                          %
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={3}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
+                    No data available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      {!loading && (data as any)?.error && (
-        <p className="text-red-400 text-sm mt-4">
-          Error: {(data as any).error}
-        </p>
-      )}
-    </main>
+interface MetricCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+  subtitle: string;
+  color: "blue" | "purple" | "green" | "orange";
+  isText?: boolean;
+}
+
+function MetricCard({
+  icon,
+  label,
+  value,
+  subtitle,
+  color,
+  isText,
+}: MetricCardProps) {
+  const colorClasses = {
+    blue: "from-blue-500/20 to-blue-600/20 border-blue-500/30 text-blue-400",
+    purple:
+      "from-purple-500/20 to-purple-600/20 border-purple-500/30 text-purple-400",
+    green:
+      "from-green-500/20 to-green-600/20 border-green-500/30 text-green-400",
+    orange:
+      "from-orange-500/20 to-orange-600/20 border-orange-500/30 text-orange-400",
+  };
+
+  return (
+    <div
+      className={`bg-gradient-to-br ${colorClasses[color]} border rounded-xl p-6 transition-all hover:scale-105 hover:shadow-lg`}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className={`p-2 rounded-lg bg-gradient-to-br ${colorClasses[color]}`}
+        >
+          {icon}
+        </div>
+      </div>
+      <p className="text-sm text-gray-400 mb-1">{label}</p>
+      <p className={`text-3xl font-bold mb-1 ${isText ? "" : "tabular-nums"}`}>
+        {isText
+          ? value
+          : typeof value === "number"
+          ? value.toLocaleString()
+          : value}
+      </p>
+      <p className="text-xs text-gray-500">{subtitle}</p>
+    </div>
   );
 }
