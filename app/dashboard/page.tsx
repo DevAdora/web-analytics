@@ -68,28 +68,93 @@ export default function MultiSiteDashboard() {
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  // Add this to your dashboard page.tsx - REPLACE the existing useEffect
+
+  // In your dashboard page.tsx - UPDATE the script src
+  useEffect(() => {
+    if (window._analytics?.initialized) {
+      console.log("🟡 Analytics already initialized");
+      return;
+    }
+
+    const existingScript = document.querySelector(
+      'script[data-analytics="true"]'
+    );
+    if (existingScript) {
+      console.log("🟡 Tracking script already exists in DOM");
+      return;
+    }
+
+    console.log("🟢 Creating tracking script");
+    const script = document.createElement("script");
+
+    script.src = "/api/track.js";
+    script.setAttribute("data-site-id", "dashboard-test");
+    script.setAttribute("data-analytics", "true"); // Add marker
+    script.async = true;
+
+    script.onload = () => {
+      console.log("✅ Tracking script loaded successfully");
+    };
+
+    script.onerror = (e) => {
+      console.error("❌ Failed to load tracking script:", e);
+    };
+
+    document.head.appendChild(script);
+    console.log("🟢 Script appended to head");
+
+    return () => {
+      const s = document.querySelector('script[data-analytics="true"]');
+      if (s) {
+        console.log("🧹 Removing tracking script");
+        s.remove();
+      }
+      if (window._analytics) {
+        window._analytics.initialized = false;
+      }
+    };
+  }, []);
 
   const fetchSites = async () => {
     try {
       const res = await fetch("/api/sites");
+      if (!res.ok) {
+        throw new Error(`Failed to fetch sites: ${res.status}`);
+      }
       const json = await res.json();
       setSites(json.sites || []);
     } catch (error) {
       console.error("Failed to fetch sites:", error);
+      setError("Failed to load sites");
     }
   };
 
   const fetchAnalytics = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`/api/analytics?siteId=${selectedSite}`);
+      if (!res.ok) {
+        throw new Error(`Analytics fetch failed: ${res.status}`);
+      }
       const json = await res.json();
-      setData(json);
-      setLastUpdated(new Date());
+
+      // ✅ Check for API errors
+      if (json.error) {
+        setError(json.error);
+        setData(null);
+      } else {
+        setData(json);
+        setLastUpdated(new Date());
+      }
     } catch (error) {
       console.error("Failed to fetch analytics:", error);
+      setError("Failed to load analytics data");
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -255,10 +320,18 @@ export default function MultiSiteDashboard() {
           </div>
         )}
 
+        {/* --- Error State --- */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center mb-6">
+            <p className="text-red-400 font-medium text-lg">{error}</p>
+          </div>
+        )}
+
         {/* --- Analytics Display --- */}
-        {!loading && data && !(data as any)?.error && (
+        {!loading && data && !error && (
           <>
-            {selectedSite === "all" && (data as any).type === "all" ? (
+            {selectedSite === "all" &&
+            (data as AllSitesAnalytics).type === "all" ? (
               <AllSitesView data={data as AllSitesAnalytics} sites={sites} />
             ) : (
               <SingleSiteView
@@ -267,15 +340,6 @@ export default function MultiSiteDashboard() {
               />
             )}
           </>
-        )}
-
-        {/* --- Error State --- */}
-        {!loading && (data as any)?.error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-            <p className="text-red-400 font-medium text-lg">
-              Error: {(data as any).error}
-            </p>
-          </div>
         )}
       </div>
     </main>
@@ -299,9 +363,14 @@ function AllSitesView({
     return site?.domain || "N/A";
   };
 
-  const totalViews = data.sites.reduce((acc, s) => acc + s.totalPageViews, 0);
-  const totalVisitors = data.sites.reduce(
-    (acc, s) => acc + s.uniqueVisitors,
+  // ✅ Safety checks
+  const sitesArray = data.sites || [];
+  const totalViews = sitesArray.reduce(
+    (acc, s) => acc + (s.totalPageViews || 0),
+    0
+  );
+  const totalVisitors = sitesArray.reduce(
+    (acc, s) => acc + (s.uniqueVisitors || 0),
     0
   );
 
@@ -312,7 +381,7 @@ function AllSitesView({
         <MetricCard
           icon={<Globe className="w-6 h-6" />}
           label="Total Sites"
-          value={data.totalSites}
+          value={data.totalSites || 0}
           subtitle="Active websites"
           color="purple"
         />
@@ -334,66 +403,77 @@ function AllSitesView({
 
       {/* Sites Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data.sites.map((site) => (
-          <div
-            key={site.siteId}
-            className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-all"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-500/30">
-                  <Globe className="w-5 h-5 text-blue-400" />
+        {sitesArray.length > 0 ? (
+          sitesArray.map((site) => (
+            <div
+              key={site.siteId}
+              className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 hover:border-gray-700 transition-all"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                    <Globe className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {getSiteName(site.siteId)}
+                    </h3>
+                    <p className="text-xs text-gray-500 truncate max-w-[180px]">
+                      {getSiteDomain(site.siteId)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    {getSiteName(site.siteId)}
-                  </h3>
-                  <p className="text-xs text-gray-500 truncate max-w-[180px]">
-                    {getSiteDomain(site.siteId)}
-                  </p>
-                </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Page Views</span>
-                <span className="text-2xl font-bold text-white">
-                  {site.totalPageViews.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Visitors</span>
-                <span className="text-2xl font-bold text-white">
-                  {site.uniqueVisitors.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Pages/Visitor</span>
-                <span className="text-lg font-semibold text-gray-300">
-                  {(site.totalPageViews / (site.uniqueVisitors || 1)).toFixed(
-                    1
-                  )}
-                </span>
-              </div>
-            </div>
-
-            {/* Top Page */}
-            {site.topPages.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-800">
-                <p className="text-xs text-gray-500 mb-2">Top Page</p>
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-300 truncate flex-1">
-                    {site.topPages[0].path}
+                  <span className="text-gray-400 text-sm">Page Views</span>
+                  <span className="text-2xl font-bold text-white">
+                    {(site.totalPageViews || 0).toLocaleString()}
                   </span>
-                  <span className="text-sm font-semibold text-blue-400 ml-2">
-                    {site.topPages[0].count}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Visitors</span>
+                  <span className="text-2xl font-bold text-white">
+                    {(site.uniqueVisitors || 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Pages/Visitor</span>
+                  <span className="text-lg font-semibold text-gray-300">
+                    {site.uniqueVisitors > 0
+                      ? (
+                          (site.totalPageViews || 0) / site.uniqueVisitors
+                        ).toFixed(1)
+                      : "0.0"}
                   </span>
                 </div>
               </div>
-            )}
+
+              {/* Top Page */}
+              {site.topPages && site.topPages.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-800">
+                  <p className="text-xs text-gray-500 mb-2">Top Page</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-300 truncate flex-1">
+                      {site.topPages[0].path}
+                    </span>
+                    <span className="text-sm font-semibold text-blue-400 ml-2">
+                      {site.topPages[0].count}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-500 text-lg">No sites found</p>
+            <p className="text-gray-600 text-sm mt-2">
+              Add a site to start tracking analytics
+            </p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -407,6 +487,13 @@ function SingleSiteView({
   data: SingleSiteAnalytics;
   autoRefresh: boolean;
 }) {
+  // ✅ Safety checks
+  const totalPageViews = data.totalPageViews || 0;
+  const uniqueVisitors = data.uniqueVisitors || 0;
+  const topPages = data.topPages || [];
+  const avgPages =
+    uniqueVisitors > 0 ? (totalPageViews / uniqueVisitors).toFixed(1) : "0.0";
+
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
@@ -414,21 +501,21 @@ function SingleSiteView({
         <MetricCard
           icon={<Eye className="w-6 h-6" />}
           label="Total Page Views"
-          value={data.totalPageViews}
+          value={totalPageViews}
           subtitle="Last 7 days"
           color="blue"
         />
         <MetricCard
           icon={<Users className="w-6 h-6" />}
           label="Unique Visitors"
-          value={data.uniqueVisitors}
+          value={uniqueVisitors}
           subtitle="Last 7 days"
           color="purple"
         />
         <MetricCard
           icon={<TrendingUp className="w-6 h-6" />}
           label="Avg. Pages/Visitor"
-          value={(data.totalPageViews / (data.uniqueVisitors || 1)).toFixed(1)}
+          value={avgPages}
           subtitle="Engagement metric"
           color="green"
         />
@@ -466,8 +553,8 @@ function SingleSiteView({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {data.topPages.length > 0 ? (
-                data.topPages.map((page, index) => (
+              {topPages.length > 0 ? (
+                topPages.map((page, index) => (
                   <tr
                     key={page.path}
                     className="hover:bg-[#222222] transition-colors"
@@ -481,7 +568,7 @@ function SingleSiteView({
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-white">
-                      {page.count.toLocaleString()}
+                      {(page.count || 0).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center gap-2">
@@ -490,15 +577,20 @@ function SingleSiteView({
                             className="bg-blue-500 h-2 rounded-full transition-all"
                             style={{
                               width: `${
-                                (page.count / data.totalPageViews) * 100
+                                totalPageViews > 0
+                                  ? ((page.count || 0) / totalPageViews) * 100
+                                  : 0
                               }%`,
                             }}
                           />
                         </div>
                         <span className="text-gray-400 min-w-[45px]">
-                          {((page.count / data.totalPageViews) * 100).toFixed(
-                            1
-                          )}
+                          {totalPageViews > 0
+                            ? (
+                                ((page.count || 0) / totalPageViews) *
+                                100
+                              ).toFixed(1)
+                            : "0.0"}
                           %
                         </span>
                       </div>
@@ -511,7 +603,7 @@ function SingleSiteView({
                     colSpan={3}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    No data available
+                    No data available yet. Start tracking to see analytics.
                   </td>
                 </tr>
               )}
