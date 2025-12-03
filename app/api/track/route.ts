@@ -3,13 +3,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { headers } from "next/headers";
 
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-};
+// Helper to get CORS headers based on origin
+function getCorsHeaders(origin: string | null) {
+    // Allow all origins for analytics tracking
+    return {
+        "Access-Control-Allow-Origin": origin || "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Credentials": "false", // Don't use credentials
+    };
+}
 
 export async function POST(req: NextRequest) {
+    const origin = req.headers.get("origin");
+    const corsHeaders = getCorsHeaders(origin);
+
     try {
         // Handle both JSON and text/plain content types
         let body;
@@ -44,6 +52,7 @@ export async function POST(req: NextRequest) {
         console.log("[Track API] Tracking event:", {
             siteId,
             path,
+            origin,
             ip: ip.substring(0, 8) + "...", // Log partial IP for debugging
         });
 
@@ -84,7 +93,7 @@ export async function POST(req: NextRequest) {
                 error: "Internal server error",
                 message: error instanceof Error ? error.message : "Unknown error"
             },
-            { status: 500, headers: corsHeaders }
+            { status: 500, headers: getCorsHeaders(origin) }
         );
     }
 }
@@ -103,8 +112,9 @@ async function createHash(str: string): Promise<string> {
 
 // Handle OPTIONS for CORS preflight
 export async function OPTIONS(req: NextRequest) {
+    const origin = req.headers.get("origin");
     return new NextResponse(null, {
         status: 200,
-        headers: corsHeaders,
+        headers: getCorsHeaders(origin),
     });
 }

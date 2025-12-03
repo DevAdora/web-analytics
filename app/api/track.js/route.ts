@@ -34,18 +34,23 @@ export async function GET() {
     return;
   }
 
-  // Fallback fetch function
+  // Fallback fetch function - NO CREDENTIALS
   function fallbackFetch(data) {
     return fetch(analyticsUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
       keepalive: true,
-      mode: 'cors'
+      mode: 'cors',
+      credentials: 'omit' // CRITICAL: Don't send credentials
     })
       .then(function (response) {
         if (!response.ok) {
           console.error('[Analytics] HTTP error:', response.status);
+          return response.text().then(function(text) {
+            console.error('[Analytics] Error response:', text);
+            throw new Error('HTTP ' + response.status);
+          });
         }
         return response.json();
       })
@@ -69,24 +74,8 @@ export async function GET() {
 
     console.log('[Analytics] Tracking page view:', data);
 
-    // Try sendBeacon first (more reliable for page unload)
-    if (navigator.sendBeacon) {
-      try {
-        var blob = new Blob([JSON.stringify(data)], { 
-          type: 'application/json' 
-        });
-        var sent = navigator.sendBeacon(analyticsUrl, blob);
-        console.log('[Analytics] Beacon sent:', sent);
-        if (!sent) {
-          fallbackFetch(data);
-        }
-      } catch (err) {
-        console.error('[Analytics] Beacon error:', err);
-        fallbackFetch(data);
-      }
-    } else {
-      fallbackFetch(data);
-    }
+    // Use fetch instead of sendBeacon for better debugging
+    fallbackFetch(data);
   }
 
   // Track initial page view
