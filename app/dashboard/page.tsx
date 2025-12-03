@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -31,6 +31,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Types
 interface Site {
   id: string;
   site_id: string;
@@ -56,6 +58,8 @@ interface TopBrowser {
 
 interface SiteAnalytics {
   siteId: string;
+  name?: string;
+  domain?: string;
   totalPageViews: number;
   uniqueVisitors: number;
   bounceRate: number;
@@ -106,6 +110,20 @@ function AnalyticsDashboard() {
   const [selectedSite, setSelectedSite] = useState("all");
   const [timeRange, setTimeRange] = useState("7d");
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setLastUpdated(new Date());
+  }, []);
+
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
   const { data: sites = [], isLoading: sitesLoading } = useQuery({
     queryKey: ["sites"],
@@ -140,7 +158,12 @@ function AnalyticsDashboard() {
               </h1>
               <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
                 <Clock className="w-4 h-4" />
-                <span>Last synced: {new Date().toLocaleTimeString()}</span>
+                <span>
+                  Last Synced:{" "}
+                  {mounted && lastUpdated
+                    ? formatTime(lastUpdated)
+                    : "--:--:--"}
+                </span>
                 <div
                   className={`w-2 h-2 rounded-full ${
                     autoRefresh ? "bg-green-500 animate-pulse" : "bg-slate-400"
@@ -359,7 +382,7 @@ function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
                       {getSiteName(site.siteId)}
                     </h3>
                     <p className="text-xs text-slate-500 truncate">
-                      {site.siteId}
+                      {site.domain || site.siteId}
                     </p>
                   </div>
                 </div>

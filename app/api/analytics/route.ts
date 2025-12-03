@@ -144,7 +144,7 @@ async function getAllSitesAnalytics(timeRange: string) {
     // Get all active sites
     const { data: sites, error: sitesError } = await supabaseServer
         .from("sites")
-        .select("site_id, name")
+        .select("site_id, name, domain")
         .eq("is_active", true);
 
     if (sitesError || !sites) {
@@ -166,6 +166,7 @@ async function getAllSitesAnalytics(timeRange: string) {
                 return {
                     siteId: site.site_id,
                     name: site.name,
+                    domain: site.domain,
                     totalPageViews: 0,
                     uniqueVisitors: 0,
                     bounceRate: 0,
@@ -181,6 +182,7 @@ async function getAllSitesAnalytics(timeRange: string) {
             return {
                 siteId: site.site_id,
                 name: site.name,
+                domain: site.domain, 
                 totalPageViews,
                 uniqueVisitors,
                 bounceRate: await calculateBounceRate(events),
