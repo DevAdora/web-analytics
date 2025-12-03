@@ -1,13 +1,13 @@
 "use client";
 
-
 export default function Home() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black px-6">
       <main className="max-w-3xl w-full text-center sm:text-left">
+        
         <h1 className="text-4xl font-bold text-black dark:text-white mb-4">
-          Welcome to ARC-TECH Analytics
+          Analytique
         </h1>
 
         <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-7">

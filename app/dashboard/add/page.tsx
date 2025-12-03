@@ -1,7 +1,16 @@
-"use client"; 
+"use client";
 
 import React, { useState } from "react";
-import { Globe, Copy, Check, Plus, ExternalLink, Code } from "lucide-react";
+import {
+  Globe,
+  Copy,
+  Check,
+  Plus,
+  ExternalLink,
+  Code,
+  Zap,
+  TrendingUp,
+} from "lucide-react";
 
 interface FormData {
   name: string;
@@ -85,23 +94,23 @@ export default function AddSiteView() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a] text-white p-4 md:p-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-slate-900">
             Add New Website
           </h1>
-          <p className="text-gray-400">
+          <p className="text-slate-600 text-sm sm:text-base">
             Register your website and get started with analytics in seconds
           </p>
         </div>
 
         {/* Input Fields */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6 mb-6">
-          <div className="space-y-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 mb-6 shadow-sm">
+          <div className="space-y-5 sm:space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Website Name
               </label>
               <input
@@ -111,12 +120,12 @@ export default function AddSiteView() {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="My Awesome Website"
-                className="w-full px-4 py-3 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all"
               />
               {formData.name && (
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-slate-500 mt-2">
                   Site ID will be:{" "}
-                  <span className="text-blue-400 font-mono">
+                  <span className="text-slate-900 font-mono font-semibold">
                     {generateSiteId(formData.name)}
                   </span>
                 </p>
@@ -124,7 +133,7 @@ export default function AddSiteView() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Website URL
               </label>
               <input
@@ -134,24 +143,24 @@ export default function AddSiteView() {
                   setFormData({ ...formData, domain: e.target.value })
                 }
                 placeholder="https://example.com"
-                className="w-full px-4 py-3 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all"
               />
             </div>
 
             <button
               onClick={handleSubmit}
               disabled={loading || !formData.name || !formData.domain}
-              className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-6 py-2.5 sm:py-3 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                  Adding...
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  <span className="hidden sm:inline">Adding...</span>
                 </>
               ) : (
                 <>
                   <Plus className="w-5 h-5" />
-                  Add Website
+                  <span>Add Website</span>
                 </>
               )}
             </button>
@@ -160,16 +169,16 @@ export default function AddSiteView() {
 
         {/* Success Message with Script */}
         {newSite && (
-          <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 border border-green-500/30 rounded-xl p-6 space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-green-500/20 rounded-lg">
-                <Check className="w-6 h-6 text-green-400" />
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 sm:p-6 space-y-5 sm:space-y-6 shadow-sm">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
+                <Check className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-white mb-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-900 mb-1">
                   Website Added Successfully!
                 </h3>
-                <p className="text-gray-300 text-sm">
+                <p className="text-slate-700 text-sm">
                   Your site{" "}
                   <span className="font-semibold">{newSite.name}</span> is now
                   registered.
@@ -179,26 +188,28 @@ export default function AddSiteView() {
 
             {/* Installation Instructions */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-gray-300">
-                <Code className="w-5 h-5 text-blue-400" />
-                <h4 className="font-semibold">Installation Instructions</h4>
+              <div className="flex items-center gap-2 text-slate-900">
+                <Code className="w-5 h-5 text-slate-700" />
+                <h4 className="font-semibold text-sm sm:text-base">
+                  Installation Instructions
+                </h4>
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm text-gray-300">
+                <p className="text-sm text-slate-700">
                   Copy and paste this one-line script into your website's{" "}
-                  <code className="px-2 py-1 bg-[#0a0a0a] rounded text-blue-400">
+                  <code className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-900 text-xs">
                     &lt;head&gt;
                   </code>{" "}
                   section or before the closing{" "}
-                  <code className="px-2 py-1 bg-[#0a0a0a] rounded text-blue-400">
+                  <code className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-900 text-xs">
                     &lt;/body&gt;
                   </code>{" "}
                   tag:
                 </p>
 
                 <div className="relative">
-                  <pre className="bg-[#0a0a0a] border border-gray-700 rounded-lg p-4 overflow-x-auto text-sm">
+                  <pre className="bg-slate-900 border border-slate-700 rounded-lg p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm">
                     <code className="text-green-400">
                       {getTrackingScript(newSite.siteId)}
                     </code>
@@ -207,17 +218,17 @@ export default function AddSiteView() {
                     onClick={() =>
                       copyToClipboard(getTrackingScript(newSite.siteId))
                     }
-                    className="absolute top-2 right-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all flex items-center gap-2"
+                    className="absolute top-2 right-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs sm:text-sm rounded-lg transition-all flex items-center gap-2"
                   >
                     {copied ? (
                       <>
-                        <Check className="w-4 h-4" />
-                        Copied!
+                        <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Copied!</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-4 h-4" />
-                        Copy
+                        <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Copy</span>
                       </>
                     )}
                   </button>
@@ -225,11 +236,11 @@ export default function AddSiteView() {
               </div>
 
               {/* Example */}
-              <div className="bg-[#0a0a0a] border border-gray-700 rounded-lg p-4">
-                <p className="text-xs text-gray-500 mb-2">
+              <div className="bg-slate-100 border border-slate-200 rounded-lg p-3 sm:p-4">
+                <p className="text-xs text-slate-600 mb-2 font-medium">
                   Example for Next.js:
                 </p>
-                <pre className="text-xs text-gray-300 overflow-x-auto">
+                <pre className="text-xs text-slate-800 overflow-x-auto">
                   {`// app/layout.tsx
 export default function Layout({ children }) {
   return (
@@ -253,17 +264,17 @@ export default function Layout({ children }) {
               </div>
 
               {/* Quick Links */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <a
                   href={`/dashboard?site=${newSite.siteId}`}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
                   View Analytics
                 </a>
                 <button
                   onClick={() => setNewSite(null)}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-all"
+                  className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-900 text-sm font-medium rounded-lg transition-all"
                 >
                   Add Another Site
                 </button>
@@ -273,33 +284,39 @@ export default function Layout({ children }) {
         )}
 
         {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-          <div className="bg-[#1a1a1a] border border-gray-800 rounded-lg p-4">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mb-3">
-              <Globe className="w-5 h-5 text-blue-400" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-3">
+              <Globe className="w-5 h-5 text-slate-700" />
             </div>
-            <h3 className="font-semibold mb-1">One-Line Setup</h3>
-            <p className="text-sm text-gray-400">
+            <h3 className="font-semibold mb-1 text-slate-900 text-sm sm:text-base">
+              One-Line Setup
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600">
               Just one script tag - no configuration needed
             </p>
           </div>
 
-          <div className="bg-[#1a1a1a] border border-gray-800 rounded-lg p-4">
-            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mb-3">
-              <Code className="w-5 h-5 text-purple-400" />
+          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-3">
+              <Zap className="w-5 h-5 text-slate-700" />
             </div>
-            <h3 className="font-semibold mb-1">Automatic Tracking</h3>
-            <p className="text-sm text-gray-400">
+            <h3 className="font-semibold mb-1 text-slate-900 text-sm sm:text-base">
+              Automatic Tracking
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600">
               Page views tracked automatically on every page
             </p>
           </div>
 
-          <div className="bg-[#1a1a1a] border border-gray-800 rounded-lg p-4">
-            <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center mb-3">
-              <ExternalLink className="w-5 h-5 text-green-400" />
+          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-3">
+              <TrendingUp className="w-5 h-5 text-slate-700" />
             </div>
-            <h3 className="font-semibold mb-1">Real-Time Data</h3>
-            <p className="text-sm text-gray-400">
+            <h3 className="font-semibold mb-1 text-slate-900 text-sm sm:text-base">
+              Real-Time Data
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600">
               See your analytics update in real-time
             </p>
           </div>
