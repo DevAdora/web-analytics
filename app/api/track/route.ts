@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 import { headers } from "next/headers";
 
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+};
+
+
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const siteId = searchParams.get("siteId");
@@ -163,7 +170,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        return NextResponse.json({ success: true }, { status: 200 });
+        return NextResponse.json({ ok: true }, { headers: corsHeaders });
     } catch (error) {
         console.error("Track API error:", error);
         return NextResponse.json(
