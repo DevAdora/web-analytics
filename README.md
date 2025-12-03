@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web Analytics
 
-## Getting Started
+A lightweight, self-hosted web analytics platform: add one script tag to any website, collect page views, and view multi-site insights in a dashboard. Built with Next.js (App Router) + Supabase.
 
-First, run the development server:
+> Goal: simple, hackable, OSS-friendly analytics you can run on your own domain.
+
+---
+
+## What this repository contains (simple explanation)
+
+This **one Next.js project** does three things:
+
+1) **Serves the tracking script**
+- URL: `https://YOUR-ANALYTICS-DOMAIN/track.js`
+- You paste this into other websites using a `<script>` tag.
+
+2) **Receives pageview events**
+- URL: `https://YOUR-ANALYTICS-DOMAIN/api/track`
+- The tracking script sends pageview data here.
+
+3) **Shows a dashboard**
+- URL: `https://YOUR-ANALYTICS-DOMAIN/dashboard`
+- Displays analytics for one site or all sites.
+
+---
+
+## Key files you’ll work with
+
+If you are using Next.js App Router, these are the important files:
+
+- Tracking script (the JS file served to the public):
+  - `app/track.js/route.ts`
+
+- Tracking API endpoint (receives POST requests and inserts into Supabase):
+  - `app/api/track/route.ts`
+
+- Sites API endpoint (lists sites shown in the dashboard selector):
+  - `app/api/sites/route.ts`
+
+- Analytics API endpoint (aggregates analytics for dashboard):
+  - `app/api/analytics/route.ts`
+
+- Dashboard UI page:
+  - `app/dashboard/page.tsx`
+
+---
+
+## Requirements
+
+- Node.js 18+
+- A Supabase project (Postgres)
+
+---
+
+## Setup
+
+### 1) Install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+git clone <your-repo-url>
+cd web-analytics
+npm install
