@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-    const script = `
+  const script = `
 (function () {
   'use strict';
 
@@ -17,8 +17,9 @@ export async function GET() {
     return;
   }
 
-  var scriptSrc = currentScript.src;
-  var analyticsUrl = scriptSrc.substring(0, scriptSrc.lastIndexOf('/')) + '/api/track';
+  var u = new URL(currentScript.src);
+  var analyticsUrl = u.origin + '/api/track';
+
 
   console.log('[Analytics] Initialized for site:', siteId);
   console.log('[Analytics] Tracking endpoint:', analyticsUrl);
@@ -53,12 +54,12 @@ export async function GET() {
     }
   }
 
-  function fallbackFetch(data) {
     fetch(analyticsUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
       body: JSON.stringify(data),
-      keepalive: true
+      keepalive: true,
+      mode: "cors"
     })
       .then(function (response) {
         console.log('[Analytics] Response status:', response.status);
@@ -101,14 +102,14 @@ export async function GET() {
 })();
 `.trim();
 
-    return new NextResponse(script, {
-        status: 200,
-        headers: {
-            'Content-Type': 'application/javascript',
-            'Cache-Control': 'public, max-age=3600, immutable',
-            'Access-Control-Allow-Origin': '*',
-        },
-    });
+  return new NextResponse(script, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/javascript',
+      'Cache-Control': 'public, max-age=3600, immutable',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
 }
 
 export const dynamic = 'force-static';
