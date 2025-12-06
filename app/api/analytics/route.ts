@@ -1,21 +1,91 @@
-// app/api/analytics/route.ts - OPTIMIZED VERSION
+// app/api/analytics/route.ts - TYPED VERSION (no any)
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/app/lib/supabaseServer";
 
+// -------------------- Types --------------------
+
+type TimeRange = "24h" | "7d" | "30d" | "90d";
+
+type ISODateString = string;
+
+type AnalyticsEventBase = {
+    created_at: ISODateString;
+    path: string;
+    ip_hash: string;
+};
+
+type AnalyticsEventWithUARef = AnalyticsEventBase & {
+    referrer: string | null;
+    user_agent: string | null;
+};
+
+type AnalyticsEventLight = AnalyticsEventBase; // path, ip_hash, created_at
+
+type TopPage = { path: string; count: number };
+type TopReferrer = { referrer: string; count: number };
+type TimeSeriesPoint = { date: string; views: number };
+type BrowserStat = { browser: string; count: number };
+
+type SingleSiteAnalytics = {
+    siteId: string;
+    totalPageViews: number;
+    uniqueVisitors: number;
+    topPages: TopPage[];
+    topReferrers: TopReferrer[];
+    timeSeriesData: TimeSeriesPoint[];
+    topBrowsers: BrowserStat[];
+    bounceRate: number;
+    avgSessionDuration: number; // seconds
+    lastUpdated: string;
+    timeRange: TimeRange;
+};
+
+type SiteRow = {
+    site_id: string;
+    name: string;
+    domain: string;
+};
+
+type AllSitesAnalyticsItem = {
+    siteId: string;
+    name: string;
+    domain: string;
+    totalPageViews: number;
+    uniqueVisitors: number;
+    bounceRate: number;
+    topPages: TopPage[];
+    timeSeriesData: TimeSeriesPoint[];
+};
+
+type AllSitesAnalytics = {
+    type: "all";
+    sites: AllSitesAnalyticsItem[];
+    totalSites: number;
+    timeRange: TimeRange;
+};
+
+type AnalyticsResponse = SingleSiteAnalytics | AllSitesAnalytics;
+
+type CacheEntry = {
+    data: AnalyticsResponse;
+    timestamp: number;
+};
+
 // In-memory cache (use Redis in production)
-const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 60000; // 1 minute
+const cache = new Map<string, CacheEntry>();
+const CACHE_TTL = 60_000; // 1 minute
+
+// -------------------- Route handlers --------------------
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const siteId = searchParams.get("siteId");
-    const timeRange = searchParams.get("range") || "7d"; // 7d, 30d, 90d
+    const timeRange = (searchParams.get("range") || "7d") as TimeRange;
 
     if (!siteId) {
         return NextResponse.json({ error: "Missing siteId" }, { status: 400 });
     }
 
-    // Check cache
     const cacheKey = `${siteId}-${timeRange}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -24,41 +94,53 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const result = siteId === "all"
-            ? await getAllSitesAnalytics(timeRange)
-            : await getSingleSiteAnalytics(siteId, timeRange);
+        const result: AnalyticsResponse =
+            siteId === "all"
+                ? await getAllSitesAnalytics(timeRange)
+                : await getSingleSiteAnalytics(siteId, timeRange);
 
-        // Cache the result
         cache.set(cacheKey, { data: result, timestamp: Date.now() });
 
         return NextResponse.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Analytics API error:", error);
         return NextResponse.json(
-            { error: "Internal server error", message: error instanceof Error ? error.message : "Unknown error" },
+            {
+                error: "Internal server error",
+                message: error instanceof Error ? error.message : "Unknown error",
+            },
             { status: 500 }
         );
     }
 }
 
-async function getSingleSiteAnalytics(siteId: string, timeRange: string) {
-    // Calculate time range
-    let startDate: string;
-    let days: number;
+export async function DELETE() {
+    cache.clear();
+    return NextResponse.json({
+        message: "Cache cleared",
+        timestamp: new Date().toISOString(),
+    });
+}
 
+// -------------------- Core logic --------------------
+
+function resolveRange(timeRange: TimeRange): { startDate: string; days: number } {
     if (timeRange === "24h") {
-        startDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        days = 1;
-    } else if (timeRange === "30d") {
-        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        days = 30;
-    } else {
-        // Default to 7d (week)
-        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        days = 7;
+        return { startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), days: 1 };
     }
+    if (timeRange === "30d") {
+        return { startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), days: 30 };
+    }
+    if (timeRange === "90d") {
+        return { startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), days: 90 };
+    }
+    // default 7d
+    return { startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), days: 7 };
+}
 
-    // Use a single optimized query with select only needed fields
+async function getSingleSiteAnalytics(siteId: string, timeRange: TimeRange): Promise<SingleSiteAnalytics> {
+    const { startDate, days } = resolveRange(timeRange);
+
     const { data, error } = await supabaseServer
         .from("analytics_events")
         .select("path, referrer, created_at, ip_hash, user_agent")
@@ -71,9 +153,8 @@ async function getSingleSiteAnalytics(siteId: string, timeRange: string) {
         throw new Error("Database query failed");
     }
 
-    const events = data || [];
+    const events: AnalyticsEventWithUARef[] = (data ?? []) as AnalyticsEventWithUARef[];
 
-    // Parallel processing for better performance
     const [
         totalPageViews,
         uniqueVisitors,
@@ -82,31 +163,16 @@ async function getSingleSiteAnalytics(siteId: string, timeRange: string) {
         timeSeriesData,
         topBrowsers,
         bounceRate,
-        avgSessionDuration
+        avgSessionDuration,
     ] = await Promise.all([
-        // Total page views
         Promise.resolve(events.length),
-
-        // Unique visitors
-        Promise.resolve(new Set(events.map(e => e.ip_hash)).size),
-
-        // Top pages
-        calculateTopPages(events),
-
-        // Top referrers
-        calculateTopReferrers(events),
-
-        // Time series
-        calculateTimeSeries(events, days),
-
-        // Top browsers
-        calculateTopBrowsers(events),
-
-        // Bounce rate
-        calculateBounceRate(events),
-
-        // Average session duration (estimated)
-        calculateAvgSessionDuration(events)
+        Promise.resolve(new Set(events.map((e) => e.ip_hash)).size),
+        Promise.resolve(calculateTopPages(events)),
+        Promise.resolve(calculateTopReferrers(events)),
+        Promise.resolve(calculateTimeSeries(events, days)),
+        Promise.resolve(calculateTopBrowsers(events)),
+        Promise.resolve(calculateBounceRate(events)),
+        Promise.resolve(calculateAvgSessionDuration(events)),
     ]);
 
     return {
@@ -124,24 +190,9 @@ async function getSingleSiteAnalytics(siteId: string, timeRange: string) {
     };
 }
 
-async function getAllSitesAnalytics(timeRange: string) {
-    // Calculate time range
-    let startDate: string;
-    let days: number;
+async function getAllSitesAnalytics(timeRange: TimeRange): Promise<AllSitesAnalytics> {
+    const { startDate, days } = resolveRange(timeRange);
 
-    if (timeRange === "24h") {
-        startDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        days = 1;
-    } else if (timeRange === "30d") {
-        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        days = 30;
-    } else {
-        // Default to 7d (week)
-        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        days = 7;
-    }
-
-    // Get all active sites
     const { data: sites, error: sitesError } = await supabaseServer
         .from("sites")
         .select("site_id, name, domain")
@@ -149,12 +200,13 @@ async function getAllSitesAnalytics(timeRange: string) {
 
     if (sitesError || !sites) {
         console.error("Error fetching sites:", sitesError);
-        return { type: "all", sites: [], totalSites: 0 };
+        return { type: "all", sites: [], totalSites: 0, timeRange };
     }
 
-    // Fetch analytics for all sites in parallel
+    const typedSites = sites as SiteRow[];
+
     const siteStats = await Promise.all(
-        sites.map(async (site) => {
+        typedSites.map(async (site): Promise<AllSitesAnalyticsItem> => {
             const { data, error } = await supabaseServer
                 .from("analytics_events")
                 .select("path, ip_hash, created_at")
@@ -175,19 +227,19 @@ async function getAllSitesAnalytics(timeRange: string) {
                 };
             }
 
-            const events = data || [];
+            const events: AnalyticsEventLight[] = (data ?? []) as AnalyticsEventLight[];
             const totalPageViews = events.length;
-            const uniqueVisitors = new Set(events.map(e => e.ip_hash)).size;
+            const uniqueVisitors = new Set(events.map((e) => e.ip_hash)).size;
 
             return {
                 siteId: site.site_id,
                 name: site.name,
-                domain: site.domain, 
+                domain: site.domain,
                 totalPageViews,
                 uniqueVisitors,
-                bounceRate: await calculateBounceRate(events),
-                topPages: await calculateTopPages(events),
-                timeSeriesData: await calculateTimeSeries(events, days),
+                bounceRate: calculateBounceRate(events),
+                topPages: calculateTopPages(events),
+                timeSeriesData: calculateTimeSeries(events, days),
             };
         })
     );
@@ -195,17 +247,16 @@ async function getAllSitesAnalytics(timeRange: string) {
     return {
         type: "all",
         sites: siteStats,
-        totalSites: sites.length,
+        totalSites: typedSites.length,
         timeRange,
     };
 }
 
-// Utility functions
-function calculateTopPages(events: any[], limit = 10) {
+// -------------------- Utility functions (typed) --------------------
+
+function calculateTopPages(events: Array<Pick<AnalyticsEventBase, "path">>, limit = 10): TopPage[] {
     const pageViewCount: Record<string, number> = {};
-    events.forEach(e => {
-        pageViewCount[e.path] = (pageViewCount[e.path] || 0) + 1;
-    });
+    for (const e of events) pageViewCount[e.path] = (pageViewCount[e.path] || 0) + 1;
 
     return Object.entries(pageViewCount)
         .map(([path, count]) => ({ path, count }))
@@ -213,19 +264,23 @@ function calculateTopPages(events: any[], limit = 10) {
         .slice(0, limit);
 }
 
-function calculateTopReferrers(events: any[], limit = 10) {
+function calculateTopReferrers(
+    events: Array<Pick<AnalyticsEventWithUARef, "referrer">>,
+    limit = 10
+): TopReferrer[] {
     const referrerCount: Record<string, number> = {};
 
-    events.forEach(e => {
-        if (e.referrer && e.referrer.trim() !== "") {
+    for (const e of events) {
+        const ref = e.referrer;
+        if (ref && ref.trim() !== "") {
             try {
-                const domain = new URL(e.referrer).hostname;
+                const domain = new URL(ref).hostname;
                 referrerCount[domain] = (referrerCount[domain] || 0) + 1;
             } catch {
-                // Invalid URL, skip
+                // ignore invalid URL
             }
         }
-    });
+    }
 
     return Object.entries(referrerCount)
         .map(([referrer, count]) => ({ referrer, count }))
@@ -233,35 +288,39 @@ function calculateTopReferrers(events: any[], limit = 10) {
         .slice(0, limit);
 }
 
-function calculateTimeSeries(events: any[], days: number) {
-    const seriesData = [];
+function calculateTimeSeries(events: Array<Pick<AnalyticsEventBase, "created_at">>, days: number): TimeSeriesPoint[] {
+    const seriesData: TimeSeriesPoint[] = [];
 
-    // For 24h view, show hourly data
     if (days === 1) {
         for (let i = 23; i >= 0; i--) {
             const hourDate = new Date(Date.now() - i * 60 * 60 * 1000);
             const hourStr = hourDate.toISOString();
-            const hourStart = new Date(hourDate.setMinutes(0, 0, 0)).toISOString();
-            const hourEnd = new Date(hourDate.setMinutes(59, 59, 999)).toISOString();
 
-            const views = events.filter(
-                e => e.created_at >= hourStart && e.created_at <= hourEnd
-            ).length;
+            const hourStartDate = new Date(hourDate);
+            hourStartDate.setMinutes(0, 0, 0);
+            const hourStart = hourStartDate.toISOString();
 
+            const hourEndDate = new Date(hourDate);
+            hourEndDate.setMinutes(59, 59, 999);
+            const hourEnd = hourEndDate.toISOString();
+
+            const views = events.filter((e) => e.created_at >= hourStart && e.created_at <= hourEnd).length;
             seriesData.push({ date: hourStr, views });
         }
     } else {
-        // For week/month view, show daily data
         for (let i = days - 1; i >= 0; i--) {
             const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-            const dateStr = date.toISOString().split('T')[0];
-            const dayStart = new Date(date.setHours(0, 0, 0, 0)).toISOString();
-            const dayEnd = new Date(date.setHours(23, 59, 59, 999)).toISOString();
+            const dateStr = date.toISOString().split("T")[0] ?? "";
 
-            const views = events.filter(
-                e => e.created_at >= dayStart && e.created_at <= dayEnd
-            ).length;
+            const dayStartDate = new Date(date);
+            dayStartDate.setHours(0, 0, 0, 0);
+            const dayStart = dayStartDate.toISOString();
 
+            const dayEndDate = new Date(date);
+            dayEndDate.setHours(23, 59, 59, 999);
+            const dayEnd = dayEndDate.toISOString();
+
+            const views = events.filter((e) => e.created_at >= dayStart && e.created_at <= dayEnd).length;
             seriesData.push({ date: dateStr, views });
         }
     }
@@ -269,20 +328,24 @@ function calculateTimeSeries(events: any[], days: number) {
     return seriesData;
 }
 
-function calculateTopBrowsers(events: any[], limit = 5) {
+function calculateTopBrowsers(
+    events: Array<Pick<AnalyticsEventWithUARef, "user_agent">>,
+    limit = 5
+): BrowserStat[] {
     const browserCount: Record<string, number> = {};
 
-    events.forEach(e => {
-        if (e.user_agent) {
-            let browser = "Other";
-            if (e.user_agent.includes("Chrome") && !e.user_agent.includes("Edge")) browser = "Chrome";
-            else if (e.user_agent.includes("Safari") && !e.user_agent.includes("Chrome")) browser = "Safari";
-            else if (e.user_agent.includes("Firefox")) browser = "Firefox";
-            else if (e.user_agent.includes("Edge")) browser = "Edge";
+    for (const e of events) {
+        const ua = e.user_agent;
+        if (!ua) continue;
 
-            browserCount[browser] = (browserCount[browser] || 0) + 1;
-        }
-    });
+        let browser = "Other";
+        if (ua.includes("Chrome") && !ua.includes("Edge")) browser = "Chrome";
+        else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+        else if (ua.includes("Firefox")) browser = "Firefox";
+        else if (ua.includes("Edge")) browser = "Edge";
+
+        browserCount[browser] = (browserCount[browser] || 0) + 1;
+    }
 
     return Object.entries(browserCount)
         .map(([browser, count]) => ({ browser, count }))
@@ -290,53 +353,40 @@ function calculateTopBrowsers(events: any[], limit = 5) {
         .slice(0, limit);
 }
 
-function calculateBounceRate(events: any[]) {
+function calculateBounceRate(events: Array<Pick<AnalyticsEventBase, "ip_hash">>): number {
     const sessionPages: Record<string, number> = {};
 
-    events.forEach(e => {
-        sessionPages[e.ip_hash] = (sessionPages[e.ip_hash] || 0) + 1;
-    });
+    for (const e of events) sessionPages[e.ip_hash] = (sessionPages[e.ip_hash] || 0) + 1;
 
     const uniqueVisitors = Object.keys(sessionPages).length;
-    const singlePageSessions = Object.values(sessionPages).filter(count => count === 1).length;
+    const singlePageSessions = Object.values(sessionPages).filter((count) => count === 1).length;
 
-    return uniqueVisitors > 0
-        ? parseFloat(((singlePageSessions / uniqueVisitors) * 100).toFixed(1))
-        : 0;
+    return uniqueVisitors > 0 ? parseFloat(((singlePageSessions / uniqueVisitors) * 100).toFixed(1)) : 0;
 }
 
-function calculateAvgSessionDuration(events: any[]) {
-    // Group events by IP hash (session)
+function calculateAvgSessionDuration(events: Array<Pick<AnalyticsEventBase, "ip_hash" | "created_at">>): number {
     const sessions: Record<string, string[]> = {};
 
-    events.forEach(e => {
-        if (!sessions[e.ip_hash]) sessions[e.ip_hash] = [];
-        sessions[e.ip_hash].push(e.created_at);
-    });
+    for (const e of events) {
+        (sessions[e.ip_hash] ??= []).push(e.created_at);
+    }
 
     let totalDuration = 0;
     let validSessions = 0;
 
-    Object.values(sessions).forEach(timestamps => {
-        if (timestamps.length > 1) {
-            timestamps.sort();
-            const duration = new Date(timestamps[timestamps.length - 1]).getTime() -
-                new Date(timestamps[0]).getTime();
-            // Only count sessions less than 1 hour (filter out anomalies)
-            if (duration < 3600000) {
-                totalDuration += duration;
-                validSessions++;
-            }
+    for (const timestamps of Object.values(sessions)) {
+        if (timestamps.length <= 1) continue;
+
+        timestamps.sort(); // ISO strings sort chronologically
+        const first = timestamps[0]!;
+        const last = timestamps[timestamps.length - 1]!;
+        const duration = new Date(last).getTime() - new Date(first).getTime();
+
+        if (duration < 3_600_000) {
+            totalDuration += duration;
+            validSessions++;
         }
-    });
+    }
 
-    return validSessions > 0
-        ? Math.floor(totalDuration / validSessions / 1000) // Convert to seconds
-        : 0;
-}
-
-// Clear cache endpoint (call periodically or on-demand)
-export async function DELETE() {
-    cache.clear();
-    return NextResponse.json({ message: "Cache cleared", timestamp: new Date().toISOString() });
+    return validSessions > 0 ? Math.floor(totalDuration / validSessions / 1000) : 0;
 }

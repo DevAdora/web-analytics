@@ -27,7 +27,7 @@ export default function EmptyDashboard() {
         </h1>
 
         <p className="text-gray-600 mb-8 text-lg">
-          You haven't added any websites yet. Let's get started by adding your
+          You havent added any websites yet. Lets get started by adding your
           first site to track.
         </p>
 

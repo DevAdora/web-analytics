@@ -197,7 +197,7 @@ export default function AddSiteView() {
 
               <div className="space-y-3">
                 <p className="text-sm text-slate-700">
-                  Copy and paste this one-line script into your website's{" "}
+                  Copy and paste this one-line script into your website{" "}
                   <code className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-900 text-xs">
                     &lt;head&gt;
                   </code>{" "}

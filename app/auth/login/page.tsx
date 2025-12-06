@@ -152,7 +152,7 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
-                Don't have an account?
+                Dont have an account?
               </span>
             </div>
           </div>

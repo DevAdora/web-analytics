@@ -110,13 +110,7 @@ function AnalyticsDashboard() {
   const [selectedSite, setSelectedSite] = useState("all");
   const [timeRange, setTimeRange] = useState("7d");
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setLastUpdated(new Date());
-  }, []);
+  const [lastUpdated, setLastUpdated] = useState<Date>(() => new Date());
 
   const formatTime = (date: Date) =>
     date.toLocaleTimeString("en-US", {
@@ -158,12 +152,7 @@ function AnalyticsDashboard() {
               </h1>
               <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
                 <Clock className="w-4 h-4" />
-                <span>
-                  Last Synced:{" "}
-                  {mounted && lastUpdated
-                    ? formatTime(lastUpdated)
-                    : "--:--:--"}
-                </span>
+                <span>Last Synced: {formatTime(lastUpdated)}</span>
                 <div
                   className={`w-2 h-2 rounded-full ${
                     autoRefresh ? "bg-green-500 animate-pulse" : "bg-slate-400"

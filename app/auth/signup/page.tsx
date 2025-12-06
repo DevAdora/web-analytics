@@ -62,8 +62,8 @@ export default function SignupPage() {
         setError("Please check your email to confirm your account.");
         setLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message || "An error occurred during signup");
+    } catch {
+      setError("An error occurred during signup");
       setLoading(false);
     }
   };
