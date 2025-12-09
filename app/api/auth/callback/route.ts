@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
     const error = requestUrl.searchParams.get('error');
     const error_description = requestUrl.searchParams.get('error_description');
 
-    // Handle error from Supabase
     if (error) {
         console.error('Auth callback error:', error, error_description);
         return NextResponse.redirect(
@@ -18,7 +17,6 @@ export async function GET(request: NextRequest) {
         );
     }
 
-    // Exchange code for session
     if (code) {
         const supabase = await createServerSupabaseClient();
 
@@ -31,7 +29,6 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Get the user to verify they're authenticated
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
@@ -43,11 +40,9 @@ export async function GET(request: NextRequest) {
 
         console.log('User authenticated successfully:', user.id);
 
-        // Successful authentication - redirect to dashboard
         return NextResponse.redirect(new URL(next, requestUrl.origin));
     }
 
-    // No code provided - redirect to login
     return NextResponse.redirect(
         new URL('/auth/login?error=Invalid confirmation link', requestUrl.origin)
     );

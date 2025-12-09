@@ -1,8 +1,9 @@
-// app/api/analytics/route.ts - TYPED VERSION with User Auth
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from '@/app/lib/supabase/server';
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-// -------------------- Types --------------------
+
+type SB = SupabaseClient;              
 
 type TimeRange = "24h" | "7d" | "30d" | "90d";
 
@@ -151,7 +152,7 @@ function resolveRange(timeRange: TimeRange): { startDate: string; days: number }
 }
 
 async function getSingleSiteAnalytics(
-    supabase: any,
+    supabase: SB,
     userId: string,
     siteId: string,
     timeRange: TimeRange
@@ -220,7 +221,7 @@ async function getSingleSiteAnalytics(
 }
 
 async function getAllSitesAnalytics(
-    supabase: any,
+    supabase: SB,
     userId: string,
     timeRange: TimeRange
 ): Promise<AllSitesAnalytics> {
