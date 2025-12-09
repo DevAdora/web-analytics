@@ -1,6 +1,6 @@
 // app/api/sites/route.ts
 import { NextResponse, NextRequest } from "next/server";
-import { supabaseServer } from "@/app/lib/supabaseServer";
+import { createServerSupabaseClient } from "@/app/lib/supabase/server";
 
 // -------------------- Types --------------------
 
@@ -9,11 +9,11 @@ type SiteRow = {
   name: string;
   domain: string | null;
   is_active: boolean;
+  user_id: string;
   created_at?: string;
 };
 
 type CreateSiteBody = {
-  siteId: string;
   name: string;
   domain?: string | null;
 };
@@ -46,13 +46,36 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-// -------------------- GET - Fetch all sites --------------------
+function generateSiteId(name: string): string {
+  // Create a URL-friendly site ID from the name
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 50) + '-' + Math.random().toString(36).substring(2, 9);
+}
+
+// -------------------- GET - Fetch user's sites --------------------
 
 export async function GET() {
   try {
-    const { data, error } = await supabaseServer
+    const supabase = await createServerSupabaseClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Fetch only sites belonging to the current user
+    const { data, error } = await supabase
       .from("sites")
       .select("*")
+      .eq("user_id", user.id)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
@@ -72,13 +95,24 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createServerSupabaseClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body: unknown = await req.json();
 
     if (!isRecord(body)) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const siteId = typeof body.siteId === "string" ? body.siteId.trim() : "";
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const domain =
       body.domain === null || body.domain === undefined
@@ -88,8 +122,8 @@ export async function POST(req: Request) {
           : null;
 
     // Validation
-    if (!siteId || !name) {
-      return NextResponse.json({ error: "siteId and name are required" }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     // Validate domain format (optional but recommended)
@@ -100,27 +134,49 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if site_id already exists
-    const { data: existing } = await supabaseServer
+    // Generate a unique site_id
+    const siteId = generateSiteId(name);
+
+    // Check if site_id already exists (unlikely but good practice)
+    const { data: existing } = await supabase
       .from("sites")
       .select("site_id")
       .eq("site_id", siteId)
       .maybeSingle();
 
     if (existing) {
-      return NextResponse.json(
-        { error: "Site ID already exists. Please choose a different name." },
-        { status: 409 }
-      );
+      // Regenerate if collision occurs
+      const newSiteId = generateSiteId(name) + '-' + Date.now();
+
+      const { data, error } = await supabase
+        .from("sites")
+        .insert({
+          site_id: newSiteId,
+          name,
+          domain,
+          user_id: user.id, // Associate with current user
+          created_at: new Date().toISOString(),
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating site:", error);
+        return NextResponse.json({ error: "Failed to create site" }, { status: 500 });
+      }
+
+      return NextResponse.json({ site: data as SiteRow }, { status: 201 });
     }
 
-    // Insert new site
-    const { data, error } = await supabaseServer
+    // Insert new site with user_id
+    const { data, error } = await supabase
       .from("sites")
       .insert({
         site_id: siteId,
         name,
         domain,
+        user_id: user.id, // Associate with current user
         created_at: new Date().toISOString(),
         is_active: true,
       })
@@ -143,6 +199,18 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
+    const supabase = await createServerSupabaseClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body: unknown = await req.json();
 
     if (!isRecord(body)) {
@@ -167,6 +235,21 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "siteId is required" }, { status: 400 });
     }
 
+    // Verify user owns this site
+    const { data: site, error: siteError } = await supabase
+      .from("sites")
+      .select("site_id")
+      .eq("site_id", siteId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (siteError || !site) {
+      return NextResponse.json(
+        { error: "Site not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
     // Build typed updates object
     const updates: Partial<SiteUpdateFields> = {};
     if (name !== undefined) updates.name = name;
@@ -185,10 +268,11 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabase
       .from("sites")
       .update(updates)
       .eq("site_id", siteId)
+      .eq("user_id", user.id) // Ensure user owns the site
       .select()
       .single();
 
@@ -208,6 +292,18 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const supabase = await createServerSupabaseClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const siteId = searchParams.get("siteId");
 
@@ -215,10 +311,26 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "siteId is required" }, { status: 400 });
     }
 
-    const { error } = await supabaseServer
+    // Verify user owns this site before deleting
+    const { data: site, error: siteError } = await supabase
+      .from("sites")
+      .select("site_id")
+      .eq("site_id", siteId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (siteError || !site) {
+      return NextResponse.json(
+        { error: "Site not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    const { error } = await supabase
       .from("sites")
       .update({ is_active: false })
-      .eq("site_id", siteId);
+      .eq("site_id", siteId)
+      .eq("user_id", user.id); // Ensure user owns the site
 
     if (error) {
       console.error("Error deleting site:", error);

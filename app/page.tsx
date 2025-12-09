@@ -26,7 +26,7 @@ export default function Home() {
 
           <Link
             className="px-6 py-3 rounded-full border border-black dark:border-white text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
-            href="/signup"
+            href="/auth/signup"
           >
             Create Account
           </Link>

@@ -1,6 +1,6 @@
-// app/api/analytics/route.ts - TYPED VERSION (no any)
+// app/api/analytics/route.ts - TYPED VERSION with User Auth
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/app/lib/supabaseServer";
+import { createServerSupabaseClient } from '@/app/lib/supabase/server';
 
 // -------------------- Types --------------------
 
@@ -19,7 +19,7 @@ type AnalyticsEventWithUARef = AnalyticsEventBase & {
     user_agent: string | null;
 };
 
-type AnalyticsEventLight = AnalyticsEventBase; // path, ip_hash, created_at
+type AnalyticsEventLight = AnalyticsEventBase;
 
 type TopPage = { path: string; count: number };
 type TopReferrer = { referrer: string; count: number };
@@ -35,7 +35,7 @@ type SingleSiteAnalytics = {
     timeSeriesData: TimeSeriesPoint[];
     topBrowsers: BrowserStat[];
     bounceRate: number;
-    avgSessionDuration: number; // seconds
+    avgSessionDuration: number;
     lastUpdated: string;
     timeRange: TimeRange;
 };
@@ -44,6 +44,7 @@ type SiteRow = {
     site_id: string;
     name: string;
     domain: string;
+    user_id: string;
 };
 
 type AllSitesAnalyticsItem = {
@@ -78,6 +79,18 @@ const CACHE_TTL = 60_000; // 1 minute
 // -------------------- Route handlers --------------------
 
 export async function GET(req: NextRequest) {
+    const supabase = await createServerSupabaseClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+        return NextResponse.json(
+            { error: 'Unauthorized' },
+            { status: 401 }
+        );
+    }
+
     const { searchParams } = new URL(req.url);
     const siteId = searchParams.get("siteId");
     const timeRange = (searchParams.get("range") || "7d") as TimeRange;
@@ -86,7 +99,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Missing siteId" }, { status: 400 });
     }
 
-    const cacheKey = `${siteId}-${timeRange}`;
+    const cacheKey = `${user.id}-${siteId}-${timeRange}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         console.log(`[Analytics API] Cache hit for ${cacheKey}`);
@@ -96,8 +109,8 @@ export async function GET(req: NextRequest) {
     try {
         const result: AnalyticsResponse =
             siteId === "all"
-                ? await getAllSitesAnalytics(timeRange)
-                : await getSingleSiteAnalytics(siteId, timeRange);
+                ? await getAllSitesAnalytics(supabase, user.id, timeRange)
+                : await getSingleSiteAnalytics(supabase, user.id, siteId, timeRange);
 
         cache.set(cacheKey, { data: result, timestamp: Date.now() });
 
@@ -134,14 +147,30 @@ function resolveRange(timeRange: TimeRange): { startDate: string; days: number }
     if (timeRange === "90d") {
         return { startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), days: 90 };
     }
-    // default 7d
     return { startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), days: 7 };
 }
 
-async function getSingleSiteAnalytics(siteId: string, timeRange: TimeRange): Promise<SingleSiteAnalytics> {
+async function getSingleSiteAnalytics(
+    supabase: any,
+    userId: string,
+    siteId: string,
+    timeRange: TimeRange
+): Promise<SingleSiteAnalytics> {
+    // Verify user owns this site
+    const { data: site, error: siteError } = await supabase
+        .from("sites")
+        .select("site_id")
+        .eq("site_id", siteId)
+        .eq("user_id", userId)
+        .single();
+
+    if (siteError || !site) {
+        throw new Error("Site not found or unauthorized");
+    }
+
     const { startDate, days } = resolveRange(timeRange);
 
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabase
         .from("analytics_events")
         .select("path, referrer, created_at, ip_hash, user_agent")
         .eq("site_id", siteId)
@@ -190,12 +219,18 @@ async function getSingleSiteAnalytics(siteId: string, timeRange: TimeRange): Pro
     };
 }
 
-async function getAllSitesAnalytics(timeRange: TimeRange): Promise<AllSitesAnalytics> {
+async function getAllSitesAnalytics(
+    supabase: any,
+    userId: string,
+    timeRange: TimeRange
+): Promise<AllSitesAnalytics> {
     const { startDate, days } = resolveRange(timeRange);
 
-    const { data: sites, error: sitesError } = await supabaseServer
+    // Fetch only user's sites
+    const { data: sites, error: sitesError } = await supabase
         .from("sites")
         .select("site_id, name, domain")
+        .eq("user_id", userId)
         .eq("is_active", true);
 
     if (sitesError || !sites) {
@@ -207,7 +242,7 @@ async function getAllSitesAnalytics(timeRange: TimeRange): Promise<AllSitesAnaly
 
     const siteStats = await Promise.all(
         typedSites.map(async (site): Promise<AllSitesAnalyticsItem> => {
-            const { data, error } = await supabaseServer
+            const { data, error } = await supabase
                 .from("analytics_events")
                 .select("path, ip_hash, created_at")
                 .eq("site_id", site.site_id)
@@ -377,7 +412,7 @@ function calculateAvgSessionDuration(events: Array<Pick<AnalyticsEventBase, "ip_
     for (const timestamps of Object.values(sessions)) {
         if (timestamps.length <= 1) continue;
 
-        timestamps.sort(); // ISO strings sort chronologically
+        timestamps.sort();
         const first = timestamps[0]!;
         const last = timestamps[timestamps.length - 1]!;
         const duration = new Date(last).getTime() - new Date(first).getTime();

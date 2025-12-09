@@ -19,8 +19,8 @@ import {
   Clock,
   MousePointer,
   AlertCircle,
+  LogOut,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +33,11 @@ const queryClient = new QueryClient({
 });
 
 // Types
+interface User {
+  id: string;
+  email: string;
+}
+
 interface Site {
   id: string;
   site_id: string;
@@ -87,9 +92,27 @@ interface AllSitesData {
 type AnalyticsData = SingleSiteData | AllSitesData;
 
 // API Functions
+async function fetchUser(): Promise<User | null> {
+  try {
+    const response = await fetch("/api/auth/user");
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.authenticated ? data : null;
+  } catch (error) {
+    console.error("Failed to fetch user:", error);
+    return null;
+  }
+}
+
 async function fetchSites(): Promise<Site[]> {
   const response = await fetch("/api/sites");
-  if (!response.ok) throw new Error("Failed to fetch sites");
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = "/auth/login";
+      throw new Error("Unauthorized");
+    }
+    throw new Error("Failed to fetch sites");
+  }
   const data = await response.json();
   return data.sites || [];
 }
@@ -101,12 +124,27 @@ async function fetchAnalytics(
   const response = await fetch(
     `/api/analytics?siteId=${siteId}&range=${timeRange}`
   );
-  if (!response.ok) throw new Error("Failed to fetch analytics");
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = "/auth/login";
+      throw new Error("Unauthorized");
+    }
+    throw new Error("Failed to fetch analytics");
+  }
   return response.json();
 }
 
+async function handleLogout() {
+  try {
+    // Add your logout API call here if you have one
+    // await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/auth/login";
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+}
+
 function AnalyticsDashboard() {
-  const router = useRouter();
   const [selectedSite, setSelectedSite] = useState("all");
   const [timeRange, setTimeRange] = useState("7d");
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -119,26 +157,71 @@ function AnalyticsDashboard() {
       second: "2-digit",
     });
 
-  const { data: sites = [], isLoading: sitesLoading } = useQuery({
+  // Fetch user
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ["user"],
+    queryFn: fetchUser,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  // Fetch sites
+  const {
+    data: sites = [],
+    isLoading: sitesLoading,
+    error: sitesError,
+  } = useQuery({
     queryKey: ["sites"],
     queryFn: fetchSites,
     staleTime: 5 * 60 * 1000,
+    enabled: !!user, // Only fetch if user is authenticated
   });
 
+  // Fetch analytics
   const {
     data: analyticsData,
     isLoading: analyticsLoading,
-    isError,
+    isError: analyticsError,
     error,
     refetch,
   } = useQuery({
     queryKey: ["analytics", selectedSite, timeRange],
     queryFn: () => fetchAnalytics(selectedSite, timeRange),
     refetchInterval: autoRefresh ? 30000 : false,
-    enabled: sites.length > 0 || selectedSite === "all",
+    enabled: !!user && (sites.length > 0 || selectedSite === "all"),
   });
 
-  const isLoading = sitesLoading || analyticsLoading;
+  // Update last updated timestamp on successful refetch
+  useEffect(() => {
+    if (analyticsData) {
+      setLastUpdated(new Date());
+    }
+  }, [analyticsData]);
+
+  const isLoading = userLoading || sitesLoading || analyticsLoading;
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!userLoading && !user) {
+      window.location.href = "/auth/login";
+    }
+  }, [user, userLoading]);
+
+  // Show loading state while checking authentication
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-300 border-t-slate-900 mx-auto mb-4" />
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if no user (will redirect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8">
@@ -146,18 +229,28 @@ function AnalyticsDashboard() {
         {/* Header */}
         <header className="bg-white border border-slate-200 rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-            <div>
+            <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
                 Analytics Dashboard
               </h1>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
-                <Clock className="w-4 h-4" />
-                <span>Last Synced: {formatTime(lastUpdated)}</span>
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    autoRefresh ? "bg-green-500 animate-pulse" : "bg-slate-400"
-                  }`}
-                />
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+                  <Clock className="w-4 h-4" />
+                  <span>Last Synced: {formatTime(lastUpdated)}</span>
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      autoRefresh
+                        ? "bg-green-500 animate-pulse"
+                        : "bg-slate-400"
+                    }`}
+                  />
+                </div>
+                {user && (
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+                    <Users className="w-4 h-4" />
+                    <span>{user.email}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -199,59 +292,107 @@ function AnalyticsDashboard() {
 
               <button
                 className="px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all flex items-center gap-2"
-                onClick={() => router.push("/dashboard/add")}
+                onClick={() => (window.location.href = "/dashboard/add")}
               >
                 <PlusCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Add Site</span>
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="px-3 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-all flex items-center gap-2"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
         </header>
 
-        {/* Site Selector */}
-        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm">
-          <label className="block text-sm font-medium text-slate-700 mb-3">
-            Select Site
-          </label>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            <button
-              onClick={() => setSelectedSite("all")}
-              className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap flex items-center gap-2 transition-all font-medium ${
-                selectedSite === "all"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              All Sites
-            </button>
+        {/* Sites Error */}
+        {sitesError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-red-900">
+                Failed to load sites
+              </h3>
+              <p className="text-sm text-red-700">
+                {sitesError instanceof Error
+                  ? sitesError.message
+                  : "Unknown error"}
+              </p>
+            </div>
+          </div>
+        )}
 
-            {sites.map((site: Site) => (
+        {/* Site Selector */}
+        {!sitesError && (
+          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm">
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Select Site
+            </label>
+            <div className="flex gap-2 overflow-x-auto pb-2">
               <button
-                key={site.id}
-                onClick={() => setSelectedSite(site.site_id)}
+                onClick={() => setSelectedSite("all")}
                 className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap flex items-center gap-2 transition-all font-medium ${
-                  selectedSite === site.site_id
+                  selectedSite === "all"
                     ? "bg-slate-900 text-white shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
                 }`}
               >
-                <Globe className="w-4 h-4" />
-                {site.name}
+                <BarChart3 className="w-4 h-4" />
+                All Sites
               </button>
-            ))}
+
+              {sites.map((site: Site) => (
+                <button
+                  key={site.id}
+                  onClick={() => setSelectedSite(site.site_id)}
+                  className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap flex items-center gap-2 transition-all font-medium ${
+                    selectedSite === site.site_id
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+                  }`}
+                >
+                  <Globe className="w-4 h-4" />
+                  {site.name}
+                </button>
+              ))}
+            </div>
+
+            {sites.length === 0 && !sitesLoading && (
+              <div className="text-center py-8 bg-slate-50 rounded-lg mt-4">
+                <Globe className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-600 font-medium mb-2">No sites yet</p>
+                <p className="text-sm text-slate-500 mb-4">
+                  Add your first site to start tracking analytics
+                </p>
+                <button
+                  onClick={() => (window.location.href = "/dashboard/add")}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors inline-flex items-center gap-2"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Add Site
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Loading State */}
-        {isLoading && (
+        {isLoading && sites.length > 0 && (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-300 border-t-slate-900" />
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-300 border-t-slate-900 mx-auto mb-4" />
+              <p className="text-slate-600">Loading analytics...</p>
+            </div>
           </div>
         )}
 
         {/* Error State */}
-        {isError && (
+        {analyticsError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
             <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
             <div className="flex-1">
@@ -272,7 +413,7 @@ function AnalyticsDashboard() {
         )}
 
         {/* Analytics Content */}
-        {!isLoading && !isError && analyticsData && (
+        {!isLoading && !analyticsError && analyticsData && sites.length > 0 && (
           <>
             {"type" in analyticsData && analyticsData.type === "all" ? (
               <AllSitesView data={analyticsData} sites={sites} />
@@ -286,17 +427,28 @@ function AnalyticsDashboard() {
         )}
 
         {/* No Data State */}
-        {!isLoading && !isError && !analyticsData && (
-          <div className="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-sm">
-            <BarChart3 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-700 mb-2">
-              No data available
-            </h3>
-            <p className="text-slate-500">
-              Start tracking analytics to see your data here
-            </p>
-          </div>
-        )}
+        {!isLoading &&
+          !analyticsError &&
+          analyticsData &&
+          "type" in analyticsData &&
+          analyticsData.sites.length === 0 && (
+            <div className="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-sm">
+              <BarChart3 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-700 mb-2">
+                No analytics data yet
+              </h3>
+              <p className="text-slate-500 mb-4">
+                Install the tracking script on your website to start collecting
+                data
+              </p>
+              <button
+                onClick={() => (window.location.href = "/dashboard/debug")}
+                className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
+              >
+                View Debug Info
+              </button>
+            </div>
+          )}
       </div>
 
       <ReactQueryDevtools initialIsOpen={false} />
@@ -437,8 +589,11 @@ function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
           ))
         ) : (
           <div className="col-span-full text-center py-12">
-            <Globe className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 text-lg">No sites found</p>
+            <BarChart3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 text-lg mb-2">No analytics data yet</p>
+            <p className="text-slate-400 text-sm">
+              Install tracking scripts to see your data
+            </p>
           </div>
         )}
       </div>

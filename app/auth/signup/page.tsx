@@ -4,12 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase/client";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -35,45 +38,84 @@ export default function SignupPage() {
       return;
     }
 
+    if (!fullName.trim()) {
+      setError("Full name is required");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Sign up the user
+      console.log("Starting signup process...");
+
+      // Sign up the user - the database trigger will create the profile
       const { data, error: signupError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: fullName,
+            full_name: fullName.trim(),
           },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
-      if (signupError) throw signupError;
-
-      // If email confirmation is disabled, user is automatically signed in
-      if (data.user && data.session) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push("/dashboard");
-          router.refresh();
-        }, 1500);
-      } else if (data.user && !data.session) {
-        // Email confirmation is required
-        setError("Please check your email to confirm your account.");
-        setLoading(false);
+      if (signupError) {
+        console.error("Signup error:", signupError);
+        throw signupError;
       }
-    } catch {
-      setError("An error occurred during signup");
+
+      // Check if user was created
+      if (!data.user) {
+        throw new Error("Failed to create user account");
+      }
+
+      console.log("User created successfully:", data.user.id);
+
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        // Email confirmation is enabled - show message
+        console.log("Email confirmation required");
+        setSuccess(true);
+        setError(""); // Clear any errors
+        return;
+      }
+
+      // Success - user is signed in and profile was created by trigger
+      console.log("Signup completed successfully - user is authenticated");
+      setSuccess(true);
+
+      setTimeout(() => {
+        router.push("/dashboard");
+        router.refresh();
+      }, 1500);
+    } catch (err: any) {
+      console.error("Signup error:", err);
+
+      // Handle specific error messages
+      if (
+        err.message?.includes("already registered") ||
+        err.message?.includes("already been registered")
+      ) {
+        setError("This email is already registered. Please log in instead.");
+      } else if (err.message?.includes("Invalid email")) {
+        setError("Please enter a valid email address.");
+      } else if (err.message?.includes("Password should be")) {
+        setError("Password should be at least 6 characters long.");
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError("An error occurred during signup. Please try again.");
+      }
+
       setLoading(false);
     }
   };
 
-  
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center dark:bg-black px-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black px-4">
+        <div className="max-w-md w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center shadow-lg">
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
               className="w-8 h-8 text-green-500"
               fill="none"
@@ -88,31 +130,49 @@ export default function SignupPage() {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Account Created!
           </h2>
-          <p className="text-gray-600">Redirecting to dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            {error ? error : "Redirecting to dashboard..."}
+          </p>
+          {error && (
+            <Link
+              href="/auth/login"
+              className="inline-block px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-full hover:opacity-80 transition-all"
+            >
+              Go to Login
+            </Link>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center dark:bg-black px-4">
-      <div className="max-w-md w-full  bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black px-4">
+      <div className="max-w-3xl w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-lg">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-black dark:text-white mb-2">
-            Create Account
+            Analytique
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400">
             Start tracking your website analytics
           </p>
         </div>
 
-        <div className="space-y-6">
+        <form onSubmit={handleSignup} className="space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              {error}
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 flex items-start gap-3 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-800 dark:text-red-400 text-sm font-medium">
+                  Signup Failed
+                </p>
+                <p className="text-red-600 dark:text-red-300 text-xs mt-1">
+                  {error}
+                </p>
+              </div>
             </div>
           )}
 
@@ -128,7 +188,10 @@ export default function SignupPage() {
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg 
+                text-black dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 
+                focus:ring-black dark:focus:ring-white focus:border-transparent transition-all"
               placeholder="John Doe"
             />
           </div>
@@ -145,7 +208,10 @@ export default function SignupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg 
+                text-black dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 
+                focus:ring-black dark:focus:ring-white focus:border-transparent transition-all"
               placeholder="you@example.com"
             />
           </div>
@@ -157,14 +223,34 @@ export default function SignupPage() {
             >
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg 
+                  text-black dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 
+                  focus:ring-black dark:focus:ring-white focus:border-transparent transition-all pr-12"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              Must be at least 6 characters
+            </p>
           </div>
 
           <div>
@@ -174,41 +260,78 @@ export default function SignupPage() {
             >
               Confirm Password
             </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg 
+                  text-black dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 
+                  focus:ring-black dark:focus:ring-white focus:border-transparent transition-all pr-12"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           <button
-            onClick={handleSignup}
+            type="submit"
             disabled={loading}
             className="w-full bg-black dark:bg-white text-white dark:text-black font-semibold 
                 py-3 px-6 rounded-full transition-all hover:opacity-80
                 disabled:opacity-50 disabled:cursor-not-allowed flex items-center 
                 justify-center gap-2"
           >
-            {loading ? "Creating Account..." : "Sign Up"}
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 dark:border-black/30 border-t-white dark:border-t-black rounded-full animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              "Create Account"
+            )}
           </button>
+        </form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-zinc-200 dark:border-zinc-800"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+              Already have an account?
+            </span>
+          </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link href="/auth/login" className="text-white font-medium">
-              Log in
-            </Link>
-          </p>
-        </div>
+        <Link
+          href="/auth/login"
+          className="block w-full text-center py-3 px-6 border border-zinc-300 dark:border-zinc-700 
+            rounded-full text-black dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 
+            transition-all font-medium"
+        >
+          Sign In
+        </Link>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
-            By signing up, you agree to our Terms of Service and Privacy Policy
-          </p>
+        <div className="text-center mt-6">
+          <Link
+            href="/"
+            className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+          >
+            ← Back to Home
+          </Link>
         </div>
       </div>
     </div>
