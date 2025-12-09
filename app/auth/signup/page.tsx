@@ -25,7 +25,6 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
 
-    // Validation
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
@@ -45,9 +44,6 @@ export default function SignupPage() {
     }
 
     try {
-      console.log("Starting signup process...");
-
-      // Sign up the user - the database trigger will create the profile
       const { data, error: signupError } = await supabase.auth.signUp({
         email,
         password,
@@ -63,50 +59,27 @@ export default function SignupPage() {
         console.error("Signup error:", signupError);
         throw signupError;
       }
-
-      // Check if user was created
       if (!data.user) {
         throw new Error("Failed to create user account");
       }
-
-      console.log("User created successfully:", data.user.id);
-
-      // Check if email confirmation is required
       if (data.user && !data.session) {
-        // Email confirmation is enabled - show message
-        console.log("Email confirmation required");
         setSuccess(true);
-        setError(""); // Clear any errors
+        setError("");
         return;
       }
 
-      // Success - user is signed in and profile was created by trigger
-      console.log("Signup completed successfully - user is authenticated");
       setSuccess(true);
 
       setTimeout(() => {
         router.push("/dashboard");
         router.refresh();
       }, 1500);
-    } catch (err: any) {
-      console.error("Signup error:", err);
-
-      // Handle specific error messages
-      if (
-        err.message?.includes("already registered") ||
-        err.message?.includes("already been registered")
-      ) {
-        setError("This email is already registered. Please log in instead.");
-      } else if (err.message?.includes("Invalid email")) {
-        setError("Please enter a valid email address.");
-      } else if (err.message?.includes("Password should be")) {
-        setError("Password should be at least 6 characters long.");
-      } else if (err.message) {
-        setError(err.message);
-      } else {
-        setError("An error occurred during signup. Please try again.");
-      }
-
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An error occurred during signup. Please try again.";
+      setError(message);
       setLoading(false);
     }
   };

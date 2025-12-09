@@ -91,17 +91,12 @@ interface AllSitesData {
 
 type AnalyticsData = SingleSiteData | AllSitesData;
 
-// API Functions
 async function fetchUser(): Promise<User | null> {
-  try {
-    const response = await fetch("/api/auth/user");
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.authenticated ? data : null;
-  } catch (error) {
-    console.error("Failed to fetch user:", error);
-    return null;
-  }
+  const res = await fetch("/api/auth/user");
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.authenticated) return null;
+  return { id: data.id, email: data.email };
 }
 
 async function fetchSites(): Promise<Site[]> {
@@ -136,8 +131,7 @@ async function fetchAnalytics(
 
 async function handleLogout() {
   try {
-    // Add your logout API call here if you have one
-    // await fetch("/api/auth/logout", { method: "POST" });
+    await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/auth/login";
   } catch (error) {
     console.error("Logout failed:", error);
@@ -150,21 +144,12 @@ function AnalyticsDashboard() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(() => new Date());
 
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
-  // Fetch user
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
   });
 
-  // Fetch sites
   const {
     data: sites = [],
     isLoading: sitesLoading,
@@ -173,16 +158,17 @@ function AnalyticsDashboard() {
     queryKey: ["sites"],
     queryFn: fetchSites,
     staleTime: 5 * 60 * 1000,
-    enabled: !!user, // Only fetch if user is authenticated
+    enabled: !!user,
   });
 
-  // Fetch analytics
   const {
     data: analyticsData,
     isLoading: analyticsLoading,
     isError: analyticsError,
     error,
     refetch,
+    dataUpdatedAt,
+    isFetching,
   } = useQuery({
     queryKey: ["analytics", selectedSite, timeRange],
     queryFn: () => fetchAnalytics(selectedSite, timeRange),
@@ -190,7 +176,15 @@ function AnalyticsDashboard() {
     enabled: !!user && (sites.length > 0 || selectedSite === "all"),
   });
 
-  // Update last updated timestamp on successful refetch
+  const lastUpdatedDate = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
+
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
   useEffect(() => {
     if (analyticsData) {
       setLastUpdated(new Date());
@@ -199,14 +193,12 @@ function AnalyticsDashboard() {
 
   const isLoading = userLoading || sitesLoading || analyticsLoading;
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!userLoading && !user) {
       window.location.href = "/auth/login";
     }
   }, [user, userLoading]);
 
-  // Show loading state while checking authentication
   if (userLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -217,12 +209,9 @@ function AnalyticsDashboard() {
       </div>
     );
   }
-
-  // Don't render if no user (will redirect)
   if (!user) {
     return null;
   }
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -236,7 +225,10 @@ function AnalyticsDashboard() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
                   <Clock className="w-4 h-4" />
-                  <span>Last Synced: {formatTime(lastUpdated)}</span>
+                  <span>
+                    Last Synced:{" "}
+                    {lastUpdatedDate ? formatTime(lastUpdatedDate) : "—"}
+                  </span>
                   <div
                     className={`w-2 h-2 rounded-full ${
                       autoRefresh

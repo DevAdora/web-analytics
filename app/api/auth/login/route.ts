@@ -1,41 +1,52 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
 export async function POST(request: Request) {
-    try {
-        const { email, password } = await request.json();
+  try {
+    const { email, password } = await request.json();
 
-        const cookieStore = await cookies(); // ✅ await here
+    // We'll attach any auth cookies to THIS response
+    const response = NextResponse.json({ ok: true });
 
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    getAll() {
-                        return cookieStore.getAll();
-                    },
-                    setAll(cookiesToSet) {
-                        cookiesToSet.forEach(({ name, value, options }) => {
-                            cookieStore.set(name, value, options); // ✅ exists now
-                        });
-                    },
-                },
-            }
-        );
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          // Read cookies from the incoming request
+          getAll() {
+            return request.headers.get("cookie")
+              ? request.headers.get("cookie")!.split(";").map((c) => {
+                  const [name, ...rest] = c.trim().split("=");
+                  return { name, value: decodeURIComponent(rest.join("=")) };
+                })
+              : [];
+          },
+          // Write cookies onto the outgoing response
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
+          },
+        },
+      }
+    );
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 400 });
-        }
-
-        return NextResponse.json({ user: data.user }, { status: 200 });
-    } catch {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }
+
+    // Return user AND include Set-Cookie headers
+    return NextResponse.json(
+      { ok: true, user: data.user },
+      { headers: response.headers }
+    );
+  } catch {
+    return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });
+  }
 }
