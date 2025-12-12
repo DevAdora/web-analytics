@@ -21,7 +21,19 @@ import {
   AlertCircle,
   LogOut,
 } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, XAxis, Bar, BarChart } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  Bar,
+  BarChart,
+  Label,
+  PolarGrid,
+  PolarRadiusAxis,
+  RadialBar,
+  RadialBarChart,
+} from "recharts";
 import {
   Card,
   CardContent,
@@ -671,9 +683,90 @@ function SingleSiteView({
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Visitors Radial Chart */}
+        <Card className="flex flex-col">
+          <CardHeader className="items-center pb-0">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Unique Visitors
+            </CardTitle>
+            <CardDescription>
+              {timeRange === "24h"
+                ? "Last 24 hours"
+                : timeRange === "7d"
+                ? "Last 7 days"
+                : "Last 30 days"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 pb-0">
+            <ChartContainer
+              config={{
+                visitors: {
+                  label: "Visitors",
+                  color: "hsl(var(--chart-1))",
+                },
+              }}
+              className="mx-auto aspect-square max-h-[250px]"
+            >
+              <RadialBarChart
+                data={[
+                  {
+                    visitors: uniqueVisitors,
+                    fill: "hsl(var(--chart-1))",
+                  },
+                ]}
+                startAngle={90}
+                endAngle={90 + (uniqueVisitors > 0 ? 270 : 0)}
+                innerRadius={80}
+                outerRadius={140}
+              >
+                <PolarGrid
+                  gridType="circle"
+                  radialLines={false}
+                  stroke="none"
+                  className="first:fill-muted last:fill-background"
+                  polarRadius={[86, 74]}
+                />
+                <RadialBar dataKey="visitors" background cornerRadius={10} />
+                <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                  <Label
+                    content={({ viewBox }) => {
+                      if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                        return (
+                          <text
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                          >
+                            <tspan
+                              x={viewBox.cx}
+                              y={viewBox.cy}
+                              className="fill-foreground text-4xl font-bold"
+                            >
+                              {uniqueVisitors.toLocaleString()}
+                            </tspan>
+                            <tspan
+                              x={viewBox.cx}
+                              y={(viewBox.cy || 0) + 24}
+                              className="fill-muted-foreground"
+                            >
+                              Visitors
+                            </tspan>
+                          </text>
+                        );
+                      }
+                    }}
+                  />
+                </PolarRadiusAxis>
+              </RadialBarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
         {/* Time Series Chart */}
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -728,32 +821,11 @@ function SingleSiteView({
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        className="min-w-[200px] p-3 text-white"
-                        labelFormatter={(value) => {
-                          const date = new Date(value);
-                          return timeRange === "24h"
-                            ? date.toLocaleTimeString("en-US", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : date.toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              });
-                        }}
-                        formatter={(value) => (
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-base text-white">
-                              {value.toLocaleString()}
-                            </span>
-                            <span className="text-sm text-white">
-                              views
-                            </span>
-                          </div>
-                        )}
+                        hideIndicator
+                        className="min-w-[180px]"
                       />
                     }
+                    cursor={false}
                   />
                   <Area
                     dataKey="views"
@@ -771,7 +843,10 @@ function SingleSiteView({
             )}
           </CardContent>
         </Card>
+      </div>
 
+      {/* Second Row - Top Browsers */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-6">
         {/* Top Browsers */}
         <Card>
           <CardHeader>

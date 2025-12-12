@@ -5,45 +5,61 @@ import { headers } from "next/headers";
 
 // Helper to get CORS headers based on origin
 function getCorsHeaders(origin: string | null) {
-    // Allow all origins for analytics tracking
     return {
         "Access-Control-Allow-Origin": origin || "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Credentials": "false", // Don't use credentials
+        "Access-Control-Allow-Credentials": "false",
     };
 }
 
 // Helper to check if request is from development environment
-function isDevelopmentEnvironment(origin: string | null, referer: string | null): boolean {
-    if (!origin && !referer) return false;
+function isDevelopmentEnvironment(
+    origin: string | null,
+    referer: string | null,
+    host: string | null,
+    forwardedHost: string | null
+): boolean {
+    // Check all possible sources of hostname information
+    const hostsToCheck = [origin, referer, host, forwardedHost].filter(Boolean);
 
-    const urlToCheck = origin || referer || "";
-
-    // Check for localhost and local IPs
     const devPatterns = [
         'localhost',
         '127.0.0.1',
         '0.0.0.0',
         '192.168.',
-        '10.',
+        '10.0.',
         '172.16.',
-        '.local'
+        '.local',
+        ':3000',
+        ':3001',
+        ':8080',
+        ':5173', // Vite default
+        ':4200', // Angular default
     ];
 
-    return devPatterns.some(pattern => urlToCheck.includes(pattern));
+    // Check if any host matches development patterns
+    return hostsToCheck.some(hostValue => {
+        if (!hostValue) return false;
+        return devPatterns.some(pattern => hostValue.includes(pattern));
+    });
 }
 
 export async function POST(req: NextRequest) {
+    const headersList = await headers();
     const origin = req.headers.get("origin");
     const referer = req.headers.get("referer");
+    const host = headersList.get("host");
+    const forwardedHost = headersList.get("x-forwarded-host");
     const corsHeaders = getCorsHeaders(origin);
 
-    // Block requests from development environments
-    if (isDevelopmentEnvironment(origin, referer)) {
+    // Check if it's from development environment
+    if (isDevelopmentEnvironment(origin, referer, host, forwardedHost)) {
         console.log("[Track API] Blocked request from development environment:", {
             origin,
-            referer
+            referer,
+            host,
+            forwardedHost,
         });
         return NextResponse.json(
             { error: "Tracking disabled in development environment" },
@@ -77,7 +93,6 @@ export async function POST(req: NextRequest) {
         }
 
         // Get IP address for unique visitor tracking
-        const headersList = await headers();
         const forwarded = headersList.get("x-forwarded-for");
         const realIp = headersList.get("x-real-ip");
         const ip = forwarded?.split(",")[0] || realIp || "unknown";
@@ -86,7 +101,9 @@ export async function POST(req: NextRequest) {
             siteId,
             path,
             origin,
-            ip: ip.substring(0, 8) + "...", // Log partial IP for debugging
+            host,
+            forwardedHost,
+            ip: ip.substring(0, 8) + "...",
         });
 
         // Create a simple hash of the IP for privacy
@@ -140,7 +157,7 @@ async function createHash(str: string): Promise<string> {
     const hashHex = hashArray
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
-    return hashHex.substring(0, 16); // Shortened hash
+    return hashHex.substring(0, 16);
 }
 
 // Handle OPTIONS for CORS preflight
