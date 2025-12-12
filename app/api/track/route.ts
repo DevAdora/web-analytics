@@ -14,9 +14,42 @@ function getCorsHeaders(origin: string | null) {
     };
 }
 
+// Helper to check if request is from development environment
+function isDevelopmentEnvironment(origin: string | null, referer: string | null): boolean {
+    if (!origin && !referer) return false;
+
+    const urlToCheck = origin || referer || "";
+
+    // Check for localhost and local IPs
+    const devPatterns = [
+        'localhost',
+        '127.0.0.1',
+        '0.0.0.0',
+        '192.168.',
+        '10.',
+        '172.16.',
+        '.local'
+    ];
+
+    return devPatterns.some(pattern => urlToCheck.includes(pattern));
+}
+
 export async function POST(req: NextRequest) {
     const origin = req.headers.get("origin");
+    const referer = req.headers.get("referer");
     const corsHeaders = getCorsHeaders(origin);
+
+    // Block requests from development environments
+    if (isDevelopmentEnvironment(origin, referer)) {
+        console.log("[Track API] Blocked request from development environment:", {
+            origin,
+            referer
+        });
+        return NextResponse.json(
+            { error: "Tracking disabled in development environment" },
+            { status: 403, headers: corsHeaders }
+        );
+    }
 
     try {
         // Handle both JSON and text/plain content types

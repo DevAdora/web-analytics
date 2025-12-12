@@ -21,6 +21,20 @@ export async function GET() {
     return;
   }
 
+  // Check if we're in a development environment
+  var hostname = window.location.hostname;
+  var isDevelopment = hostname === 'localhost' || 
+                      hostname === '127.0.0.1' || 
+                      hostname.startsWith('192.168.') ||
+                      hostname.startsWith('10.') ||
+                      hostname.endsWith('.local');
+
+  if (isDevelopment) {
+    console.log('[Analytics] Development environment detected - tracking disabled');
+    console.log('[Analytics] Hostname:', hostname);
+    return;
+  }
+
   // Determine the tracking endpoint
   var u = new URL(currentScript.src);
   var analyticsUrl = u.origin + '/api/track';
