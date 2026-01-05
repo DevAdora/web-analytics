@@ -3,7 +3,7 @@
 import { createClient } from "@/app/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ThemeToggle } from "../components/ThemeToggle";
+
 
 export default function DashboardHeader({ userEmail }: { userEmail: string }) {
   const router = useRouter();
@@ -22,20 +22,13 @@ export default function DashboardHeader({ userEmail }: { userEmail: string }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Analytics Dashboard
-            </h1>
+            <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {userEmail}
             </p>
           </div>
 
-          {/* Right side buttons */}
           <div className="flex items-center gap-3">
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
-            {/* Logout Button */}
             <button
               onClick={handleLogout}
               disabled={loading}
