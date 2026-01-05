@@ -6,6 +6,8 @@ import {
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
+
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   Activity,
@@ -58,7 +60,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Types
 interface User {
   id: string;
   email: string;
@@ -239,13 +240,13 @@ function AnalyticsDashboard() {
     return null;
   }
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8 bg-white dark:bg-slate-800">
+      <div className="max-w-7xl mx-auto space-y-6 bg-white dark:bg-slate-800">
         {/* Header */}
-        <header className="bg-white border border-slate-200 rounded-lg p-4 sm:p-6 shadow-sm">
+        <header className="bg-white dark:bg-slate-800 border border-slate-200 rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold dark:text-slate-900 mb-2">
                 Analytics Dashboard
               </h1>
               <div className="flex items-center gap-4">
@@ -273,6 +274,7 @@ function AnalyticsDashboard() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <ThemeToggle />
               <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value)}
@@ -347,8 +349,8 @@ function AnalyticsDashboard() {
 
         {/* Site Selector */}
         {!sitesError && (
-          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm">
-            <label className="block text-sm font-medium text-slate-700 mb-3">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm dark:bg-slate-800">
+            <label className="block text-sm font-medium text-slate-700 mb-3 dark:text-white">
               Select Site
             </label>
             <div className="flex gap-2 overflow-x-auto pb-2">
@@ -356,7 +358,7 @@ function AnalyticsDashboard() {
                 onClick={() => setSelectedSite("all")}
                 className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap flex items-center gap-2 transition-all font-medium ${
                   selectedSite === "all"
-                    ? "bg-slate-900 text-white shadow-sm"
+                    ? "bg-white text-black shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
                 }`}
               >
@@ -370,7 +372,7 @@ function AnalyticsDashboard() {
                   onClick={() => setSelectedSite(site.site_id)}
                   className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap flex items-center gap-2 transition-all font-medium ${
                     selectedSite === site.site_id
-                      ? "bg-slate-900 text-white shadow-sm"
+                      ? "bg-white text-black shadow-sm"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
                   }`}
                 >
@@ -473,7 +475,6 @@ function AnalyticsDashboard() {
     </div>
   );
 }
-
 function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
   const getSiteName = (siteId: string) =>
     sites.find((s: Site) => s.site_id === siteId)?.name || siteId;
@@ -523,22 +524,25 @@ function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
         />
       </div>
 
-      {/* Sites Grid */}
+      {/* Sites Grid - FIXED CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {sitesArray.length > 0 ? (
           sitesArray.map((site: SiteAnalytics) => (
-            <Card key={site.siteId} className="hover:shadow-md transition-all">
+            <Card
+              key={site.siteId}
+              className="hover:shadow-md transition-all bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+            >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 sm:p-3 rounded-lg bg-slate-100 border border-slate-200">
-                      <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
+                    <div className="p-2 sm:p-3 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+                      <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
                     </div>
                     <div className="min-w-0">
-                      <CardTitle className="text-base sm:text-lg truncate">
+                      <CardTitle className="text-base sm:text-lg truncate text-slate-900 dark:text-white">
                         {getSiteName(site.siteId)}
                       </CardTitle>
-                      <CardDescription className="truncate">
+                      <CardDescription className="truncate text-slate-600 dark:text-slate-400">
                         {site.domain || site.siteId}
                       </CardDescription>
                     </div>
@@ -548,26 +552,34 @@ function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
               <CardContent>
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Page Views</p>
-                    <p className="text-xl sm:text-2xl font-bold text-slate-900">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      Page Views
+                    </p>
+                    <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
                       {(site.totalPageViews || 0).toLocaleString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Visitors</p>
-                    <p className="text-xl sm:text-2xl font-bold text-slate-900">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      Visitors
+                    </p>
+                    <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
                       {(site.uniqueVisitors || 0).toLocaleString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Bounce Rate</p>
-                    <p className="text-base sm:text-lg font-semibold text-slate-700">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      Bounce Rate
+                    </p>
+                    <p className="text-base sm:text-lg font-semibold text-slate-700 dark:text-slate-300">
                       {site.bounceRate || 0}%
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Avg. Pages</p>
-                    <p className="text-base sm:text-lg font-semibold text-slate-700">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      Avg. Pages
+                    </p>
+                    <p className="text-base sm:text-lg font-semibold text-slate-700 dark:text-slate-300">
                       {site.uniqueVisitors > 0
                         ? (
                             (site.totalPageViews || 0) / site.uniqueVisitors
@@ -592,7 +604,7 @@ function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
                         return (
                           <div
                             key={i}
-                            className="flex-1 bg-slate-900 rounded-t hover:bg-slate-700 transition-colors"
+                            className="flex-1 bg-blue-600 dark:bg-blue-500 rounded-t hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                             style={{
                               height: height > 0 ? `${height}%` : "4%",
                               minHeight: "4px",
@@ -609,9 +621,11 @@ function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
           ))
         ) : (
           <div className="col-span-full text-center py-12">
-            <BarChart3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 text-lg mb-2">No analytics data yet</p>
-            <p className="text-slate-400 text-sm">
+            <BarChart3 className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-500 dark:text-slate-400 text-lg mb-2">
+              No analytics data yet
+            </p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm">
               Install tracking scripts to see your data
             </p>
           </div>
@@ -909,15 +923,15 @@ function SingleSiteView({
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50">
+              <thead className="bg-slate-50 dark:bg-slate-800">
                 <tr>
-                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase">
+                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase dark:text-white">
                     Page
                   </th>
-                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase">
+                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase dark:text-white">
                     Views
                   </th>
-                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase">
+                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase dark:text-white">
                     Share
                   </th>
                 </tr>
@@ -997,15 +1011,19 @@ function MetricCard({
   value: string | number;
 }) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-start justify-between mb-3 sm:mb-4">
-          <div className="p-2 sm:p-3 rounded-lg bg-slate-100">
-            <div className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700">{icon}</div>
+          <div className="p-2 sm:p-3 rounded-lg bg-slate-100 dark:bg-slate-700">
+            <div className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-200">
+              {icon}
+            </div>
           </div>
         </div>
-        <p className="text-xs sm:text-sm text-slate-500 mb-1">{label}</p>
-        <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-1">
+          {label}
+        </p>
+        <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">
           {value}
         </p>
       </CardContent>

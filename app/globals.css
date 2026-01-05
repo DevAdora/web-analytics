@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -111,12 +115,136 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
-
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  :root {
+    --background: 248 250 252; /* slate-50 */
+    --foreground: 15 23 42; /* slate-900 */
+    --card: 255 255 255; /* white */
+    --card-foreground: 15 23 42; /* slate-900 */
+    --primary: 15 23 42; /* slate-900 */
+    --primary-foreground: 248 250 252; /* slate-50 */
+    --muted: 241 245 249; /* slate-100 */
+    --muted-foreground: 100 116 139; /* slate-500 */
+    --border: 226 232 240; /* slate-200 */
   }
+
+  .dark {
+    --background: 15 23 42; /* slate-900 */
+    --foreground: 248 250 252; /* slate-50 */
+    --card: 30 41 59; /* slate-800 */
+    --card-foreground: 248 250 252; /* slate-50 */
+    --primary: 248 250 252; /* slate-50 */
+    --primary-foreground: 15 23 42; /* slate-900 */
+    --muted: 51 65 85; /* slate-700 */
+    --muted-foreground: 148 163 184; /* slate-400 */
+    --border: 51 65 85; /* slate-700 */
+  }
+
+  * {
+    @apply border-border;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Smooth transitions */
+  * {
+    transition-property: color, background-color, border-color,
+      text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  /* Prevent transition on page load */
+  .no-transition {
+    transition: none !important;
+  }
+}
+
+@layer components {
+  /* Custom Card Styles */
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  }
+
+  /* Ensure proper text contrast */
+  .card * {
+    @apply text-inherit;
+  }
+
+  /* Button styles */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600;
+  }
+
+  /* Input styles */
+  .input {
+    @apply flex h-10 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Select styles */
+  select {
+    @apply bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100 dark:bg-slate-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400 dark:bg-slate-500;
+}
+
+/* Fix for charts in dark mode */
+.recharts-surface {
+  @apply text-slate-900 dark:text-slate-100;
+}
+
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  @apply stroke-slate-200 dark:stroke-slate-700;
+}
+
+.recharts-text {
+  @apply fill-slate-600 dark:fill-slate-400;
+}
+
+/* Ensure all text is visible */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply text-slate-900 dark:text-white;
+}
+
+p {
+  @apply text-slate-600 dark:text-slate-300;
+}
+
+/* Loading spinner fix */
+.animate-spin {
+  @apply text-slate-900 dark:text-white;
 }

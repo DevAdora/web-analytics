@@ -10,6 +10,7 @@ import {
   Code,
   Zap,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 
 interface FormData {
@@ -94,23 +95,28 @@ export default function AddSiteView() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200 p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-slate-900">
-            Add New Website
-          </h1>
-          <p className="text-slate-600 text-sm sm:text-base">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
+              Add New Website
+            </h1>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
             Register your website and get started with analytics in seconds
           </p>
         </div>
 
         {/* Input Fields */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 mb-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6 mb-6 shadow-sm transition-colors duration-200">
           <div className="space-y-5 sm:space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Website Name
               </label>
               <input
@@ -120,12 +126,12 @@ export default function AddSiteView() {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="My Awesome Website"
-                className="w-full px-4 py-2.5 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
               />
               {formData.name && (
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                   Site ID will be:{" "}
-                  <span className="text-slate-900 font-mono font-semibold">
+                  <span className="text-slate-900 dark:text-white font-mono font-semibold">
                     {generateSiteId(formData.name)}
                   </span>
                 </p>
@@ -133,7 +139,7 @@ export default function AddSiteView() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Website URL
               </label>
               <input
@@ -143,14 +149,14 @@ export default function AddSiteView() {
                   setFormData({ ...formData, domain: e.target.value })
                 }
                 placeholder="https://example.com"
-                className="w-full px-4 py-2.5 sm:py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
               />
             </div>
 
             <button
               onClick={handleSubmit}
               disabled={loading || !formData.name || !formData.domain}
-              className="w-full px-6 py-2.5 sm:py-3 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-6 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
             >
               {loading ? (
                 <>
@@ -169,16 +175,16 @@ export default function AddSiteView() {
 
         {/* Success Message with Script */}
         {newSite && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 sm:p-6 space-y-5 sm:space-y-6 shadow-sm">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 sm:p-6 space-y-5 sm:space-y-6 shadow-sm transition-colors duration-200">
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
-                <Check className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+              <div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/40 rounded-lg flex-shrink-0">
+                <Check className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-semibold text-slate-900 mb-1">
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-1">
                   Website Added Successfully!
                 </h3>
-                <p className="text-slate-700 text-sm">
+                <p className="text-slate-700 dark:text-slate-300 text-sm">
                   Your site{" "}
                   <span className="font-semibold">{newSite.name}</span> is now
                   registered.
@@ -188,29 +194,29 @@ export default function AddSiteView() {
 
             {/* Installation Instructions */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-slate-900">
-                <Code className="w-5 h-5 text-slate-700" />
+              <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                <Code className="w-5 h-5 text-slate-700 dark:text-slate-300" />
                 <h4 className="font-semibold text-sm sm:text-base">
                   Installation Instructions
                 </h4>
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm text-slate-700">
+                <p className="text-sm text-slate-700 dark:text-slate-300">
                   Copy and paste this one-line script into your website{" "}
-                  <code className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-900 text-xs">
+                  <code className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100 text-xs">
                     &lt;head&gt;
                   </code>{" "}
                   section or before the closing{" "}
-                  <code className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-900 text-xs">
+                  <code className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100 text-xs">
                     &lt;/body&gt;
                   </code>{" "}
                   tag:
                 </p>
 
                 <div className="relative">
-                  <pre className="bg-slate-900 border border-slate-700 rounded-lg p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm">
-                    <code className="text-green-400">
+                  <pre className="bg-slate-900 dark:bg-slate-950 border border-slate-700 dark:border-slate-800 rounded-lg p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm">
+                    <code className="text-green-400 dark:text-green-300">
                       {getTrackingScript(newSite.siteId)}
                     </code>
                   </pre>
@@ -218,7 +224,7 @@ export default function AddSiteView() {
                     onClick={() =>
                       copyToClipboard(getTrackingScript(newSite.siteId))
                     }
-                    className="absolute top-2 right-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs sm:text-sm rounded-lg transition-all flex items-center gap-2"
+                    className="absolute top-2 right-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs sm:text-sm rounded-lg transition-all flex items-center gap-2"
                   >
                     {copied ? (
                       <>
@@ -236,11 +242,11 @@ export default function AddSiteView() {
               </div>
 
               {/* Example */}
-              <div className="bg-slate-100 border border-slate-200 rounded-lg p-3 sm:p-4">
-                <p className="text-xs text-slate-600 mb-2 font-medium">
+              <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4 transition-colors duration-200">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mb-2 font-medium">
                   Example for Next.js:
                 </p>
-                <pre className="text-xs text-slate-800 overflow-x-auto">
+                <pre className="text-xs text-slate-800 dark:text-slate-200 overflow-x-auto">
                   {`// app/layout.tsx
 export default function Layout({ children }) {
   return (
@@ -267,14 +273,14 @@ export default function Layout({ children }) {
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <a
                   href={`/dashboard?site=${newSite.siteId}`}
-                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <TrendingUp className="w-4 h-4" />
                   View Analytics
                 </a>
                 <button
                   onClick={() => setNewSite(null)}
-                  className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-900 text-sm font-medium rounded-lg transition-all"
+                  className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white text-sm font-medium rounded-lg transition-all"
                 >
                   Add Another Site
                 </button>
@@ -285,38 +291,38 @@ export default function Layout({ children }) {
 
         {/* Features */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8">
-          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-3">
-              <Globe className="w-5 h-5 text-slate-700" />
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-200">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-3">
+              <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="font-semibold mb-1 text-slate-900 text-sm sm:text-base">
+            <h3 className="font-semibold mb-1 text-slate-900 dark:text-white text-sm sm:text-base">
               One-Line Setup
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Just one script tag - no configuration needed
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-3">
-              <Zap className="w-5 h-5 text-slate-700" />
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-200">
+            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-3">
+              <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
-            <h3 className="font-semibold mb-1 text-slate-900 text-sm sm:text-base">
+            <h3 className="font-semibold mb-1 text-slate-900 dark:text-white text-sm sm:text-base">
               Automatic Tracking
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Page views tracked automatically on every page
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
-            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-3">
-              <TrendingUp className="w-5 h-5 text-slate-700" />
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-slate-900/50 transition-all duration-200 sm:col-span-2 lg:col-span-1">
+            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-3">
+              <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="font-semibold mb-1 text-slate-900 text-sm sm:text-base">
+            <h3 className="font-semibold mb-1 text-slate-900 dark:text-white text-sm sm:text-base">
               Real-Time Data
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               See your analytics update in real-time
             </p>
           </div>
