@@ -18,7 +18,7 @@ export default function DashboardHeader({ userEmail }: { userEmail: string }) {
   };
 
   return (
-    <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700 transition-colors">
+    <header className="bg-white dark:bg-[#16161d] shadow-sm border-b border-gray-200 dark:bg-[#16161d] transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           <div>

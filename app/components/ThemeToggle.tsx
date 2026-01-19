@@ -43,7 +43,7 @@ export function ThemeToggle() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+        className="p-2 rounded-lg bg-gray-100 dark:bg-[#16161d] hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
         aria-label="Toggle theme"
         title="Toggle theme"
       >
@@ -51,7 +51,7 @@ export function ThemeToggle() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
+        <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-[#16161d] rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-50">
           {themes.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
