@@ -240,10 +240,9 @@ function AnalyticsDashboard() {
     return null;
   }
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8 bg-white dark:bg-slate-800">
-      <div className="max-w-7xl mx-auto space-y-6 bg-white dark:bg-slate-800">
-        {/* Header */}
-        <header className="bg-white dark:bg-slate-800 border border-slate-200 rounded-lg p-4 sm:p-6 shadow-sm">
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8 bg-white dark:bg-[#16161d]">
+      <div className="max-w-7xl mx-auto space-y-6 bg-white dark:bg-[#16161d]">
+        <header className="bg-white dark:bg-[#16161d] border dark:border-white rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold dark:text-slate-900 mb-2">
@@ -349,7 +348,7 @@ function AnalyticsDashboard() {
 
         {/* Site Selector */}
         {!sitesError && (
-          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm dark:bg-slate-800">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm dark:bg-[#16161d]">
             <label className="block text-sm font-medium text-slate-700 mb-3 dark:text-white">
               Select Site
             </label>
@@ -530,12 +529,12 @@ function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
           sitesArray.map((site: SiteAnalytics) => (
             <Card
               key={site.siteId}
-              className="hover:shadow-md transition-all bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+              className="hover:shadow-md transition-all bg-white dark:bg-[#16161d] border-[#16161d] dark:border-white"
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 sm:p-3 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+                    <div className="p-2 sm:p-3 rounded-lg bg-slate-100 dark:bg-[#16161d] border border-[#16161d] dark:border-white">
                       <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
                     </div>
                     <div className="min-w-0">
@@ -604,7 +603,7 @@ function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
                         return (
                           <div
                             key={i}
-                            className="flex-1 bg-blue-600 dark:bg-blue-500 rounded-t hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                            className="flex-1 bg-blue-600 dark:bg-white rounded-t hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                             style={{
                               height: height > 0 ? `${height}%` : "4%",
                               minHeight: "4px",
@@ -1011,11 +1010,11 @@ function MetricCard({
   value: string | number;
 }) {
   return (
-    <Card className="hover:shadow-md transition-shadow bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+    <Card className="hover:shadow-md transition-shadow bg-white dark:bg-[#16161d] border-[#16161d] dark:border-white">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-start justify-between mb-3 sm:mb-4">
-          <div className="p-2 sm:p-3 rounded-lg bg-slate-100 dark:bg-slate-700">
-            <div className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-200">
+          <div className="p-2 sm:p-3 rounded-lg bg-slate-100 dark:bg-white">
+            <div className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-[#16161d]">
               {icon}
             </div>
           </div>

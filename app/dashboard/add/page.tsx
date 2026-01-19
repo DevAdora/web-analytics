@@ -95,12 +95,12 @@ export default function AddSiteView() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#16161d] transition-colors duration-200 p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <div className="p-2 bg-blue-100 dark:bg-[#16161d] rounded-lg">
               <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
@@ -113,7 +113,7 @@ export default function AddSiteView() {
         </div>
 
         {/* Input Fields */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6 mb-6 shadow-sm transition-colors duration-200">
+        <div className="bg-white dark:bg-[#16161d] rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6 mb-6 shadow-sm transition-colors duration-200">
           <div className="space-y-5 sm:space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -126,7 +126,7 @@ export default function AddSiteView() {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="My Awesome Website"
-                className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-[#16161d] border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
               />
               {formData.name && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
@@ -149,14 +149,14 @@ export default function AddSiteView() {
                   setFormData({ ...formData, domain: e.target.value })
                 }
                 placeholder="https://example.com"
-                className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-[#16161d] border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
               />
             </div>
 
             <button
               onClick={handleSubmit}
               disabled={loading || !formData.name || !formData.domain}
-              className="w-full px-6 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+              className="w-full px-6 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:bg-[#16161d]dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
             >
               {loading ? (
                 <>
@@ -204,18 +204,18 @@ export default function AddSiteView() {
               <div className="space-y-3">
                 <p className="text-sm text-slate-700 dark:text-slate-300">
                   Copy and paste this one-line script into your website{" "}
-                  <code className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100 text-xs">
+                  <code className="px-2 py-0.5 bg-slate-100 dark:bg-[#16161d] border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100 text-xs">
                     &lt;head&gt;
                   </code>{" "}
                   section or before the closing{" "}
-                  <code className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100 text-xs">
+                  <code className="px-2 py-0.5 bg-slate-100 dark:bg-[#16161d] border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100 text-xs">
                     &lt;/body&gt;
                   </code>{" "}
                   tag:
                 </p>
 
                 <div className="relative">
-                  <pre className="bg-slate-900 dark:bg-slate-950 border border-slate-700 dark:border-slate-800 rounded-lg p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm">
+                  <pre className="bg-slate-900 dark:bg-[#16161d] border border-slate-700 dark:border-slate-800 rounded-lg p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm">
                     <code className="text-green-400 dark:text-green-300">
                       {getTrackingScript(newSite.siteId)}
                     </code>
@@ -224,7 +224,7 @@ export default function AddSiteView() {
                     onClick={() =>
                       copyToClipboard(getTrackingScript(newSite.siteId))
                     }
-                    className="absolute top-2 right-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs sm:text-sm rounded-lg transition-all flex items-center gap-2"
+                    className="absolute top-2 right-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 dark:bg-[#16161d] dark:hover:bg-slate-700 text-white text-xs sm:text-sm rounded-lg transition-all flex items-center gap-2"
                   >
                     {copied ? (
                       <>
@@ -242,7 +242,7 @@ export default function AddSiteView() {
               </div>
 
               {/* Example */}
-              <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4 transition-colors duration-200">
+              <div className="bg-slate-100 dark:bg-[#16161d] border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4 transition-colors duration-200">
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-2 font-medium">
                   Example for Next.js:
                 </p>
@@ -269,7 +269,6 @@ export default function Layout({ children }) {
                 </pre>
               </div>
 
-              {/* Quick Links */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <a
                   href={`/dashboard?site=${newSite.siteId}`}

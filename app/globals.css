@@ -129,7 +129,7 @@
   }
 
   .dark {
-    --background: 15 23 42; /* slate-900 */
+    --background: 240 14 10; /* slate-900 */
     --foreground: 248 250 252; /* slate-50 */
     --card: 30 41 59; /* slate-800 */
     --card-foreground: 248 250 252; /* slate-50 */
