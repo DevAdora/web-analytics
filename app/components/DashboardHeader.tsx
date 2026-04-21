@@ -1,4 +1,3 @@
-// components/DashboardHeader.tsx
 "use client";
 
 import { createClient } from "@/app/lib/supabase/client";
@@ -10,14 +9,11 @@ import { LogOut, PlusCircle, RefreshCw, Activity } from "lucide-react";
 
 interface DashboardHeaderProps {
   userEmail: string;
-  /** ISO string or Date of last data sync */
   lastSyncedAt?: Date | null;
-  /** Whether auto-refresh is active */
   autoRefresh?: boolean;
   onToggleRefresh?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-  /** Selected time range value */
   timeRange?: string;
   onTimeRangeChange?: (range: string) => void;
 }
@@ -150,10 +146,8 @@ export default function DashboardHeader({
     <>
       <style>{HEADER_STYLES}</style>
       <nav className="dh-nav">
-        {/* Logo */}
         <Link href="/" className="dh-logo">Analytique</Link>
 
-        {/* Meta info */}
         <div className="dh-meta">
           <span className="dh-pill">
             <div className={`dh-pulse ${autoRefresh ? "" : "off"}`} />
@@ -162,7 +156,6 @@ export default function DashboardHeader({
           <span className="dh-pill">{userEmail}</span>
         </div>
 
-        {/* Actions */}
         <div className="dh-actions">
           <ThemeToggle />
 
