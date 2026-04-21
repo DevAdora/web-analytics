@@ -2,138 +2,203 @@
 
 import Link from "next/link";
 
+const EMPTY_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  .ed-root {
+    min-height: 100vh;
+    background: var(--bg, #F6F5F1);
+    color: var(--fg, #0D0D0B);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+  }
+  .ed-root::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(circle, var(--border, #E0DED7) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none; z-index: 0; opacity: 0.65;
+  }
+
+  .ed-card {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 640px;
+    background: var(--card, #FFFFFF);
+    border: 1px solid var(--border, #E0DED7);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .ed-top {
+    padding: 48px 40px 36px;
+    border-bottom: 1px solid var(--border, #E0DED7);
+  }
+
+  .ed-kicker {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent, #1C6B45);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ed-kicker::before {
+    content: ''; display: block;
+    width: 16px; height: 1px; background: var(--accent, #1C6B45);
+  }
+
+  .ed-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem; font-weight: 600;
+    letter-spacing: -0.03em; line-height: 1.1;
+    color: var(--fg, #0D0D0B);
+    margin-bottom: 12px;
+  }
+
+  .ed-title em {
+    font-style: italic;
+    color: var(--accent, #1C6B45);
+    font-weight: 400;
+  }
+
+  .ed-sub {
+    font-size: 0.875rem; line-height: 1.7;
+    color: var(--muted, #7A7A72);
+    max-width: 460px;
+    margin-bottom: 28px;
+  }
+
+  .ed-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px; border-radius: 3px;
+    background: var(--fg, #0D0D0B); color: var(--bg, #F6F5F1);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem; font-weight: 500;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: opacity 0.18s;
+  }
+  .ed-cta:hover { opacity: 0.78; }
+  .ed-cta svg { width: 14px; height: 14px; }
+
+  .ed-features {
+    padding: 32px 40px 36px;
+  }
+
+  .ed-feat-hdr {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 24px;
+  }
+  .ed-feat-lbl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted, #7A7A72); white-space: nowrap;
+  }
+  .ed-feat-line { flex: 1; height: 1px; background: var(--border, #E0DED7); }
+
+  .ed-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: var(--border, #E0DED7);
+    border: 1px solid var(--border, #E0DED7);
+    border-radius: 3px; overflow: hidden;
+  }
+
+  .ed-feat {
+    background: var(--card, #FFFFFF);
+    padding: 20px 18px;
+    transition: background 0.15s;
+  }
+  .ed-feat:hover { background: var(--accent-light, #E8F5EE); }
+
+  .ed-feat-idx {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem; color: var(--accent, #1C6B45);
+    letter-spacing: 0.08em; margin-bottom: 10px; opacity: 0.9;
+  }
+
+  .ed-feat-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem; font-weight: 500;
+    color: var(--fg, #0D0D0B); margin-bottom: 5px;
+    letter-spacing: -0.01em;
+  }
+
+  .ed-feat-desc {
+    font-size: 0.75rem; line-height: 1.55;
+    color: var(--muted, #7A7A72);
+  }
+
+  @media (max-width: 540px) {
+    .ed-top { padding: 32px 24px 28px; }
+    .ed-features { padding: 24px 24px 28px; }
+    .ed-title { font-size: 1.6rem; }
+    .ed-grid { grid-template-columns: 1fr; }
+  }
+`;
+
+const features = [
+  {
+    name: "Track Visitors",
+    desc: "Real-time visitor counts and page views across all your sites.",
+  },
+  {
+    name: "View Analytics",
+    desc: "Detailed insights into traffic trends, bounce rates, and sessions.",
+  },
+  {
+    name: "Manage Sites",
+    desc: "Add multiple properties and switch between them instantly.",
+  },
+];
+
 export default function EmptyDashboard() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8 text-center">
-        <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg
-            className="w-12 h-12 text-blue-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-            />
-          </svg>
-        </div>
+    <>
+      <style>{EMPTY_STYLES}</style>
+      <div className="ed-root">
+        <div className="ed-card">
+          {/* Top section */}
+          <div className="ed-top">
+            <div className="ed-kicker">Getting started</div>
+            <h1 className="ed-title">
+              Your dashboard<br />is <em>ready to go.</em>
+            </h1>
+            <p className="ed-sub">
+              You haven't added any websites yet. Add your first site to start
+              collecting privacy-friendly analytics — no cookies, no consent banners.
+            </p>
+            <Link href="/dashboard/add" className="ed-cta">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="16"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
+              Add Your First Website →
+            </Link>
+          </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
-          Welcome to Your Analytics Dashboard! 🎉
-        </h1>
-
-        <p className="text-gray-600 mb-8 text-lg">
-          You havent added any websites yet. Lets get started by adding your
-          first site to track.
-        </p>
-
-        <Link
-          href="/dashboard/add"
-          className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          Add Your First Website
-        </Link>
-
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            What you can do:
-          </h3>
-          <div className="grid md:grid-cols-3 gap-6 text-left">
-            <div className="flex flex-col">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-3">
-                <svg
-                  className="w-6 h-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  />
-                </svg>
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-1">
-                Track Visitors
-              </h4>
-              <p className="text-sm text-gray-600">
-                Monitor real-time visitors and page views
-              </p>
+          {/* Features section */}
+          <div className="ed-features">
+            <div className="ed-feat-hdr">
+              <span className="ed-feat-lbl">What you can track</span>
+              <div className="ed-feat-line" />
             </div>
-
-            <div className="flex flex-col">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
-                <svg
-                  className="w-6 h-6 text-purple-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-1">
-                View Analytics
-              </h4>
-              <p className="text-sm text-gray-600">
-                Get detailed insights and statistics
-              </p>
-            </div>
-
-            <div className="flex flex-col">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mb-3">
-                <svg
-                  className="w-6 h-6 text-orange-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                  />
-                </svg>
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-1">Manage Sites</h4>
-              <p className="text-sm text-gray-600">
-                Add multiple websites to track
-              </p>
+            <div className="ed-grid">
+              {features.map((f, i) => (
+                <div key={f.name} className="ed-feat">
+                  <div className="ed-feat-idx">{String(i + 1).padStart(2, "0")}</div>
+                  <div className="ed-feat-name">{f.name}</div>
+                  <div className="ed-feat-desc">{f.desc}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

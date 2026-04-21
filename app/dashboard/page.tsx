@@ -6,116 +6,43 @@ import {
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
-import { ThemeToggle } from "@/app/components/ThemeToggle";
-
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
-  Activity,
-  Users,
-  Eye,
-  TrendingUp,
-  Globe,
-  BarChart3,
-  PlusCircle,
-  RefreshCw,
-  Clock,
-  MousePointer,
-  AlertCircle,
-  LogOut,
+  Users, Eye, TrendingUp, Globe,
+  BarChart3, PlusCircle, Clock, MousePointer,
 } from "lucide-react";
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  Bar,
-  BarChart,
-  Label,
-  PolarGrid,
-  PolarRadiusAxis,
-  RadialBar,
-  RadialBarChart,
+  Area, AreaChart, CartesianGrid, XAxis,
+  Label, PolarGrid, PolarRadiusAxis, RadialBar, RadialBarChart,
 } from "recharts";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
+  ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent,
 } from "@/components/ui/chart";
+
+import DashboardHeader from "@/app/components/DashboardHeader";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 2,
-      staleTime: 30000,
-    },
+    queries: { refetchOnWindowFocus: false, retry: 2, staleTime: 30000 },
   },
 });
 
-interface User {
-  id: string;
-  email: string;
-}
-
-interface Site {
-  id: string;
-  site_id: string;
-  name: string;
-  domain?: string;
-  is_active?: boolean;
-}
-
-interface TimeSeriesData {
-  date: string;
-  views: number;
-}
-
-interface TopPage {
-  path: string;
-  count: number;
-}
-
-interface TopBrowser {
-  browser: string;
-  count: number;
-}
-
+interface User { id: string; email: string; }
+interface Site { id: string; site_id: string; name: string; domain?: string; is_active?: boolean; }
+interface TimeSeriesData { date: string; views: number; }
+interface TopPage { path: string; count: number; }
+interface TopBrowser { browser: string; count: number; }
 interface SiteAnalytics {
-  siteId: string;
-  name?: string;
-  domain?: string;
-  totalPageViews: number;
-  uniqueVisitors: number;
-  bounceRate: number;
-  topPages?: TopPage[];
-  timeSeriesData?: TimeSeriesData[];
+  siteId: string; name?: string; domain?: string;
+  totalPageViews: number; uniqueVisitors: number; bounceRate: number;
+  topPages?: TopPage[]; timeSeriesData?: TimeSeriesData[];
 }
-
 interface SingleSiteData {
-  siteId: string;
-  totalPageViews: number;
-  uniqueVisitors: number;
-  bounceRate: number;
-  avgSessionDuration: number;
-  topPages: TopPage[];
-  timeSeriesData: TimeSeriesData[];
-  topBrowsers: TopBrowser[];
+  siteId: string; totalPageViews: number; uniqueVisitors: number;
+  bounceRate: number; avgSessionDuration: number;
+  topPages: TopPage[]; timeSeriesData: TimeSeriesData[]; topBrowsers: TopBrowser[];
 }
-
-interface AllSitesData {
-  type: "all";
-  sites: SiteAnalytics[];
-  totalSites: number;
-}
-
+interface AllSitesData { type: "all"; sites: SiteAnalytics[]; totalSites: number; }
 type AnalyticsData = SingleSiteData | AllSitesData;
 
 async function fetchUser(): Promise<User | null> {
@@ -125,77 +52,258 @@ async function fetchUser(): Promise<User | null> {
   if (!data.authenticated) return null;
   return { id: data.id, email: data.email };
 }
-
 async function fetchSites(): Promise<Site[]> {
   const response = await fetch("/api/sites");
   if (!response.ok) {
-    if (response.status === 401) {
-      window.location.href = "/auth/login";
-      throw new Error("Unauthorized");
-    }
+    if (response.status === 401) { window.location.href = "/auth/login"; throw new Error("Unauthorized"); }
     throw new Error("Failed to fetch sites");
   }
-  const data = await response.json();
-  return data.sites || [];
+  return (await response.json()).sites || [];
 }
-
-async function fetchAnalytics(
-  siteId: string,
-  timeRange: string = "7d"
-): Promise<AnalyticsData> {
-  const response = await fetch(
-    `/api/analytics?siteId=${siteId}&range=${timeRange}`
-  );
+async function fetchAnalytics(siteId: string, timeRange: string): Promise<AnalyticsData> {
+  const response = await fetch(`/api/analytics?siteId=${siteId}&range=${timeRange}`);
   if (!response.ok) {
-    if (response.status === 401) {
-      window.location.href = "/auth/login";
-      throw new Error("Unauthorized");
-    }
+    if (response.status === 401) { window.location.href = "/auth/login"; throw new Error("Unauthorized"); }
     throw new Error("Failed to fetch analytics");
   }
   return response.json();
 }
 
-async function handleLogout() {
-  try {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/auth/login";
-  } catch (error) {
-    console.error("Logout failed:", error);
-  }
-}
+const DB_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
+  :root {
+    --bg: #F6F5F1; --fg: #0D0D0B; --accent: #1C6B45;
+    --accent-light: #E8F5EE; --muted: #7A7A72;
+    --border: #E0DED7; --card: #FFFFFF; --input-bg: #FAFAF8;
+    --error-bg: #FEF2F2; --error-border: #FECACA; --error-fg: #991B1B;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0D0D0B; --fg: #F6F5F1; --accent: #3DD68C;
+      --accent-light: #0D2B1E; --muted: #8A8A82;
+      --border: #222220; --card: #141412; --input-bg: #1A1A18;
+      --error-bg: #1F0808; --error-border: #7F1D1D; --error-fg: #FCA5A5;
+    }
+  }
+
+  .db-root {
+    min-height: 100vh; background: var(--bg); color: var(--fg);
+    font-family: 'DM Sans', sans-serif; font-weight: 300; position: relative;
+  }
+  .db-root::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+    background-size: 28px 28px; pointer-events: none; z-index: 0; opacity: 0.6;
+  }
+
+  .db-content {
+    position: relative; z-index: 1;
+    max-width: 1200px; margin: 0 auto;
+    padding: 32px 24px 64px; display: flex; flex-direction: column; gap: 24px;
+  }
+
+  /* Section header */
+  .db-shdr { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .db-slbl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap;
+  }
+  .db-sline { flex: 1; height: 1px; background: var(--border); }
+
+  /* Site selector */
+  .db-site-strip {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 16px 20px;
+  }
+  .db-site-inner { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  .db-site-btn {
+    display: inline-flex; align-items: center; gap: 7px; padding: 7px 15px;
+    border-radius: 3px; cursor: pointer; white-space: nowrap;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; letter-spacing: 0.06em;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    transition: all 0.15s;
+  }
+  .db-site-btn:hover { color: var(--fg); border-color: var(--fg); }
+  .db-site-btn.active { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .db-site-btn svg { width: 11px; height: 11px; }
+
+  /* Metric cards */
+  .db-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .db-mc {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 20px 20px 18px; position: relative;
+  }
+  .db-mc-accent {
+    position: absolute; top: 0; left: 0; width: 3px; height: 100%;
+    background: var(--accent); border-radius: 4px 0 0 4px;
+  }
+  .db-mc-lbl {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+  }
+  .db-mc-val {
+    font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 600;
+    letter-spacing: -0.04em; color: var(--fg); line-height: 1;
+  }
+
+  /* Generic card */
+  .db-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .db-card-hdr { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+  .db-card-title { font-size: 0.875rem; font-weight: 500; color: var(--fg); margin-bottom: 2px; }
+  .db-card-desc {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.08em; color: var(--muted);
+  }
+  .db-card-body { padding: 20px; }
+
+  /* Charts */
+  .db-charts { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+
+  /* Table */
+  .db-tbl { width: 100%; border-collapse: collapse; }
+  .db-tbl th {
+    text-align: left; padding: 10px 20px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    font-weight: 400; border-bottom: 1px solid var(--border);
+  }
+  .db-tbl td { padding: 11px 20px; border-bottom: 1px solid var(--border); }
+  .db-tbl tbody tr:last-child td { border-bottom: none; }
+  .db-tbl tbody tr:hover td { background: var(--bg); }
+  .db-tbl-idx {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border: 1px solid var(--border); border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem; color: var(--muted); flex-shrink: 0;
+  }
+  .db-tbl-path {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--fg);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px;
+  }
+  .db-tbl-val { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 600; color: var(--fg); }
+
+  /* Progress bars */
+  .db-bar-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; flex: 1; max-width: 160px; }
+  .db-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+  .db-bar-pct { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--muted); min-width: 38px; }
+
+  /* Browser bars */
+  .db-brow-row { margin-bottom: 16px; }
+  .db-brow-row:last-child { margin-bottom: 0; }
+  .db-brow-meta { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .db-brow-name { font-size: 0.82rem; color: var(--fg); }
+  .db-brow-count { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+  .db-brow-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .db-brow-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+
+  /* Site cards */
+  .db-site-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .db-site-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 20px; transition: border-color 0.18s;
+  }
+  .db-site-card:hover { border-color: var(--fg); }
+  .db-site-name {
+    font-size: 0.9rem; font-weight: 500; color: var(--fg); margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .db-site-domain {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem;
+    color: var(--muted); margin-bottom: 16px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .db-site-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .db-site-slbl { font-family: 'IBM Plex Mono', monospace; font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .db-site-sval { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 600; color: var(--fg); }
+  .db-site-sval-sm { font-size: 0.95rem; font-weight: 500; color: var(--fg); }
+  .db-mini-chart { display: flex; align-items: flex-end; gap: 2px; height: 36px; border-top: 1px solid var(--border); padding-top: 10px; }
+  .db-mini-bar { flex: 1; background: var(--accent); border-radius: 1px 1px 0 0; opacity: 0.65; min-height: 2px; }
+
+  /* States */
+  .db-error {
+    background: var(--error-bg); border: 1px solid var(--error-border);
+    border-radius: 4px; padding: 16px 20px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .db-error-title {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--error-fg);
+    margin-bottom: 4px; font-weight: 500;
+  }
+  .db-error-msg { font-size: 0.8rem; color: var(--error-fg); }
+  .db-retry {
+    padding: 7px 14px; border-radius: 3px; cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; letter-spacing: 0.06em;
+    border: 1px solid var(--error-border); background: transparent; color: var(--error-fg);
+    white-space: nowrap; align-self: flex-start;
+  }
+
+  .db-empty {
+    text-align: center; padding: 48px 20px;
+    border: 1px dashed var(--border); border-radius: 4px; background: var(--card);
+  }
+  .db-empty-title {
+    font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 600;
+    color: var(--fg); margin-bottom: 8px;
+  }
+  .db-empty-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 20px; }
+
+  .db-loading {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; flex-direction: column; gap: 16px; background: var(--bg);
+  }
+  .db-spinner {
+    width: 28px; height: 28px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: dbspin 0.7s linear infinite;
+  }
+  @keyframes dbspin { to { transform: rotate(360deg); } }
+  .db-spinner-lbl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+
+  .db-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 3px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--fg); transition: all 0.15s;
+  }
+  .db-btn:hover { border-color: var(--fg); }
+  .db-btn-primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .db-btn-primary:hover { opacity: 0.78; }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .db-metrics { grid-template-columns: repeat(2, 1fr); }
+    .db-charts { grid-template-columns: 1fr; }
+    .db-site-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .db-content { padding: 16px 14px 48px; gap: 16px; }
+    .db-metrics { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .db-site-grid { grid-template-columns: 1fr; }
+    .db-mc-val { font-size: 1.5rem; }
+  }
+`;
+
+/* ─── Main Dashboard ─────────────────────────────────────── */
 function AnalyticsDashboard() {
   const [selectedSite, setSelectedSite] = useState("all");
   const [timeRange, setTimeRange] = useState("7d");
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(() => new Date());
 
   const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ["user"],
-    queryFn: fetchUser,
-    staleTime: 10 * 60 * 1000,
+    queryKey: ["user"], queryFn: fetchUser, staleTime: 10 * 60 * 1000,
   });
-
-  const {
-    data: sites = [],
-    isLoading: sitesLoading,
-    error: sitesError,
-  } = useQuery({
-    queryKey: ["sites"],
-    queryFn: fetchSites,
-    staleTime: 5 * 60 * 1000,
-    enabled: !!user,
+  const { data: sites = [], isLoading: sitesLoading, error: sitesError } = useQuery({
+    queryKey: ["sites"], queryFn: fetchSites, staleTime: 5 * 60 * 1000, enabled: !!user,
   });
-
   const {
-    data: analyticsData,
-    isLoading: analyticsLoading,
-    isError: analyticsError,
-    error,
-    refetch,
-    dataUpdatedAt,
-    isFetching,
+    data: analyticsData, isLoading: analyticsLoading, isError: analyticsError,
+    error, refetch, dataUpdatedAt, isFetching,
   } = useQuery({
     queryKey: ["analytics", selectedSite, timeRange],
     queryFn: () => fetchAnalytics(selectedSite, timeRange),
@@ -203,444 +311,245 @@ function AnalyticsDashboard() {
     enabled: !!user && (sites.length > 0 || selectedSite === "all"),
   });
 
-  const lastUpdatedDate = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
-
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
-  useEffect(() => {
-    if (analyticsData) {
-      setLastUpdated(new Date());
-    }
-  }, [analyticsData]);
-
+  const lastSyncedAt = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
   const isLoading = userLoading || sitesLoading || analyticsLoading;
 
   useEffect(() => {
-    if (!userLoading && !user) {
-      window.location.href = "/auth/login";
-    }
+    if (!userLoading && !user) window.location.href = "/auth/login";
   }, [user, userLoading]);
 
   if (userLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-300 border-t-slate-900 mx-auto mb-4" />
-          <p className="text-slate-600">Loading...</p>
+      <>
+        <style>{DB_STYLES}</style>
+        <div className="db-loading">
+          <div className="db-spinner" />
+          <span className="db-spinner-lbl">Loading</span>
         </div>
-      </div>
+      </>
     );
   }
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 lg:p-8 bg-white dark:bg-[#16161d]">
-      <div className="max-w-7xl mx-auto space-y-6 bg-white dark:bg-[#16161d]">
-        <header className="bg-white dark:bg-[#16161d] border dark:border-white rounded-lg p-4 sm:p-6 shadow-sm">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold dark:text-slate-900 mb-2">
-                Analytics Dashboard
-              </h1>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
-                  <Clock className="w-4 h-4" />
-                  <span>
-                    Last Synced:{" "}
-                    {lastUpdatedDate ? formatTime(lastUpdatedDate) : "—"}
-                  </span>
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      autoRefresh
-                        ? "bg-green-500 animate-pulse"
-                        : "bg-slate-400"
-                    }`}
-                  />
+    <>
+      <style>{DB_STYLES}</style>
+      <div className="db-root">
+
+        {/* ── Header (component) ── */}
+        <DashboardHeader
+          userEmail={user.email}
+          lastSyncedAt={lastSyncedAt}
+          autoRefresh={autoRefresh}
+          onToggleRefresh={() => setAutoRefresh((v) => !v)}
+          onRefresh={() => refetch()}
+          isRefreshing={isFetching}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+        />
+
+        {/* ── Content ── */}
+        <div className="db-content">
+
+          {sitesError && (
+            <div className="db-error">
+              <div style={{ flex: 1 }}>
+                <div className="db-error-title">Failed to load sites</div>
+                <div className="db-error-msg">
+                  {sitesError instanceof Error ? sitesError.message : "Unknown error"}
                 </div>
-                {user && (
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
-                    <Users className="w-4 h-4" />
-                    <span>{user.email}</span>
-                  </div>
-                )}
               </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <ThemeToggle />
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-3 py-2 text-sm rounded-lg bg-white text-slate-700 border border-slate-300 hover:border-slate-400 font-medium transition-all focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
-                <option value="24h">Last 24 Hours</option>
-                <option value="7d">Last Week</option>
-                <option value="30d">Last Month</option>
-              </select>
-
-              <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`px-3 py-2 text-sm rounded-lg font-medium transition-all flex items-center gap-2 border ${
-                  autoRefresh
-                    ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                    : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
-                }`}
-              >
-                <Activity className="w-4 h-4" />
-                <span className="hidden sm:inline">
-                  {autoRefresh ? "Live" : "Paused"}
-                </span>
-              </button>
-
-              <button
-                onClick={() => refetch()}
-                disabled={isLoading}
-                className="px-3 py-2 text-sm rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-                />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
-
-              <button
-                className="px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all flex items-center gap-2"
-                onClick={() => (window.location.href = "/dashboard/add")}
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Add Site</span>
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="px-3 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-all flex items-center gap-2"
-                title="Logout"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Sites Error */}
-        {sitesError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-red-900">
-                Failed to load sites
-              </h3>
-              <p className="text-sm text-red-700">
-                {sitesError instanceof Error
-                  ? sitesError.message
-                  : "Unknown error"}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Site Selector */}
-        {!sitesError && (
-          <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm dark:bg-[#16161d]">
-            <label className="block text-sm font-medium text-slate-700 mb-3 dark:text-white">
-              Select Site
-            </label>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              <button
-                onClick={() => setSelectedSite("all")}
-                className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap flex items-center gap-2 transition-all font-medium ${
-                  selectedSite === "all"
-                    ? "bg-white text-black shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" />
-                All Sites
-              </button>
-
-              {sites.map((site: Site) => (
-                <button
-                  key={site.id}
-                  onClick={() => setSelectedSite(site.site_id)}
-                  className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap flex items-center gap-2 transition-all font-medium ${
-                    selectedSite === site.site_id
-                      ? "bg-white text-black shadow-sm"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
-                  }`}
-                >
-                  <Globe className="w-4 h-4" />
-                  {site.name}
-                </button>
-              ))}
-            </div>
-
-            {sites.length === 0 && !sitesLoading && (
-              <div className="text-center py-8 bg-slate-50 rounded-lg mt-4">
-                <Globe className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-600 font-medium mb-2">No sites yet</p>
-                <p className="text-sm text-slate-500 mb-4">
-                  Add your first site to start tracking analytics
-                </p>
-                <button
-                  onClick={() => (window.location.href = "/dashboard/add")}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors inline-flex items-center gap-2"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  Add Site
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Loading State */}
-        {isLoading && sites.length > 0 && (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-300 border-t-slate-900 mx-auto mb-4" />
-              <p className="text-slate-600">Loading analytics...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {analyticsError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row items-start gap-4">
-            <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-red-900 mb-1">
-                Failed to load analytics
-              </h3>
-              <p className="text-sm text-red-700">
-                {error instanceof Error ? error.message : "Unknown error"}
-              </p>
-            </div>
-            <button
-              onClick={() => refetch()}
-              className="px-4 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 font-medium transition-all text-sm"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {/* Analytics Content */}
-        {!isLoading && !analyticsError && analyticsData && sites.length > 0 && (
-          <>
-            {"type" in analyticsData && analyticsData.type === "all" ? (
-              <AllSitesView data={analyticsData} sites={sites} />
-            ) : (
-              <SingleSiteView
-                data={analyticsData as SingleSiteData}
-                timeRange={timeRange}
-              />
-            )}
-          </>
-        )}
-
-        {/* No Data State */}
-        {!isLoading &&
-          !analyticsError &&
-          analyticsData &&
-          "type" in analyticsData &&
-          analyticsData.sites.length === 0 && (
-            <div className="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-sm">
-              <BarChart3 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-slate-700 mb-2">
-                No analytics data yet
-              </h3>
-              <p className="text-slate-500 mb-4">
-                Install the tracking script on your website to start collecting
-                data
-              </p>
-              <button
-                onClick={() => (window.location.href = "/dashboard/debug")}
-                className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
-              >
-                View Debug Info
-              </button>
             </div>
           )}
-      </div>
 
-      <ReactQueryDevtools initialIsOpen={false} />
+          {/* Site selector */}
+          {!sitesError && (
+            <div className="db-site-strip">
+              <div className="db-shdr" style={{ marginBottom: 10 }}>
+                <span className="db-slbl">Site</span>
+                <div className="db-sline" />
+              </div>
+              <div className="db-site-inner">
+                <button
+                  onClick={() => setSelectedSite("all")}
+                  className={`db-site-btn ${selectedSite === "all" ? "active" : ""}`}
+                >
+                  <BarChart3 size={11} /> All Sites
+                </button>
+                {sites.map((site: Site) => (
+                  <button
+                    key={site.id}
+                    onClick={() => setSelectedSite(site.site_id)}
+                    className={`db-site-btn ${selectedSite === site.site_id ? "active" : ""}`}
+                  >
+                    <Globe size={11} /> {site.name}
+                  </button>
+                ))}
+              </div>
+
+              {sites.length === 0 && !sitesLoading && (
+                <div className="db-empty" style={{ marginTop: 16 }}>
+                  <div className="db-empty-title">No sites yet</div>
+                  <p className="db-empty-sub">Add your first site to start tracking analytics</p>
+                  <button
+                    className="db-btn db-btn-primary"
+                    onClick={() => (window.location.href = "/dashboard/add")}
+                  >
+                    <PlusCircle size={13} /> Add Site
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Loading */}
+          {isLoading && sites.length > 0 && (
+            <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}>
+              <div style={{ textAlign: "center" }}>
+                <div className="db-spinner" style={{ margin: "0 auto 14px" }} />
+                <span className="db-spinner-lbl">Loading analytics</span>
+              </div>
+            </div>
+          )}
+
+          {/* Error */}
+          {analyticsError && (
+            <div className="db-error">
+              <div style={{ flex: 1 }}>
+                <div className="db-error-title">Failed to load analytics</div>
+                <div className="db-error-msg">{error instanceof Error ? error.message : "Unknown error"}</div>
+              </div>
+              <button onClick={() => refetch()} className="db-retry">Retry</button>
+            </div>
+          )}
+
+          {/* Analytics */}
+          {!isLoading && !analyticsError && analyticsData && sites.length > 0 && (
+            <>
+              {"type" in analyticsData && analyticsData.type === "all"
+                ? <AllSitesView data={analyticsData} sites={sites} />
+                : <SingleSiteView data={analyticsData as SingleSiteData} timeRange={timeRange} />
+              }
+            </>
+          )}
+
+          {/* No data */}
+          {!isLoading && !analyticsError && analyticsData &&
+            "type" in analyticsData && analyticsData.sites.length === 0 && (
+              <div className="db-empty">
+                <div className="db-empty-title">No analytics data yet</div>
+                <p className="db-empty-sub">Install the tracking script on your website to start collecting data</p>
+                <button
+                  className="db-btn"
+                  onClick={() => (window.location.href = "/dashboard/debug")}
+                >
+                  View Debug Info
+                </button>
+              </div>
+            )
+          }
+        </div>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </div>
+    </>
+  );
+}
+
+/* ─── Metric Card ────────────────────────────────────────── */
+function MetricCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="db-mc">
+      <div className="db-mc-accent" />
+      <div className="db-mc-lbl">{label}</div>
+      <div className="db-mc-val">{value}</div>
     </div>
   );
 }
+
+/* ─── All Sites View ─────────────────────────────────────── */
 function AllSitesView({ data, sites }: { data: AllSitesData; sites: Site[] }) {
   const getSiteName = (siteId: string) =>
     sites.find((s: Site) => s.site_id === siteId)?.name || siteId;
 
   const sitesArray = data.sites || [];
-  const totalViews = sitesArray.reduce(
-    (acc: number, s: SiteAnalytics) => acc + (s.totalPageViews || 0),
-    0
-  );
-  const totalVisitors = sitesArray.reduce(
-    (acc: number, s: SiteAnalytics) => acc + (s.uniqueVisitors || 0),
-    0
-  );
-  const avgBounceRate =
-    sitesArray.length > 0
-      ? (
-          sitesArray.reduce(
-            (acc: number, s: SiteAnalytics) => acc + (s.bounceRate || 0),
-            0
-          ) / sitesArray.length
-        ).toFixed(1)
-      : "0.0";
+  const totalViews = sitesArray.reduce((acc: number, s: SiteAnalytics) => acc + (s.totalPageViews || 0), 0);
+  const totalVisitors = sitesArray.reduce((acc: number, s: SiteAnalytics) => acc + (s.uniqueVisitors || 0), 0);
+  const avgBounceRate = sitesArray.length > 0
+    ? (sitesArray.reduce((acc: number, s: SiteAnalytics) => acc + (s.bounceRate || 0), 0) / sitesArray.length).toFixed(1)
+    : "0.0";
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <MetricCard
-          icon={<Globe />}
-          label="Active Sites"
-          value={data.totalSites || 0}
-        />
-        <MetricCard
-          icon={<Eye />}
-          label="Total Views"
-          value={totalViews.toLocaleString()}
-        />
-        <MetricCard
-          icon={<Users />}
-          label="Total Visitors"
-          value={totalVisitors.toLocaleString()}
-        />
-        <MetricCard
-          icon={<TrendingUp />}
-          label="Avg Bounce Rate"
-          value={`${avgBounceRate}%`}
-        />
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div>
+        <div className="db-shdr"><span className="db-slbl">Overview</span><div className="db-sline" /></div>
+        <div className="db-metrics">
+          <MetricCard label="Active Sites" value={data.totalSites || 0} />
+          <MetricCard label="Total Views" value={totalViews.toLocaleString()} />
+          <MetricCard label="Total Visitors" value={totalVisitors.toLocaleString()} />
+          <MetricCard label="Avg Bounce Rate" value={`${avgBounceRate}%`} />
+        </div>
       </div>
 
-      {/* Sites Grid - FIXED CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-        {sitesArray.length > 0 ? (
-          sitesArray.map((site: SiteAnalytics) => (
-            <Card
-              key={site.siteId}
-              className="hover:shadow-md transition-all bg-white dark:bg-[#16161d] border-[#16161d] dark:border-white"
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 sm:p-3 rounded-lg bg-slate-100 dark:bg-[#16161d] border border-[#16161d] dark:border-white">
-                      <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
-                    </div>
-                    <div className="min-w-0">
-                      <CardTitle className="text-base sm:text-lg truncate text-slate-900 dark:text-white">
-                        {getSiteName(site.siteId)}
-                      </CardTitle>
-                      <CardDescription className="truncate text-slate-600 dark:text-slate-400">
-                        {site.domain || site.siteId}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
+      <div>
+        <div className="db-shdr"><span className="db-slbl">Sites</span><div className="db-sline" /></div>
+        <div className="db-site-grid">
+          {sitesArray.length > 0 ? (
+            sitesArray.map((site: SiteAnalytics) => (
+              <div key={site.siteId} className="db-site-card">
+                <div className="db-site-name">{getSiteName(site.siteId)}</div>
+                <div className="db-site-domain">{site.domain || site.siteId}</div>
+                <div className="db-site-stats">
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Page Views
-                    </p>
-                    <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
-                      {(site.totalPageViews || 0).toLocaleString()}
-                    </p>
+                    <div className="db-site-slbl">Page Views</div>
+                    <div className="db-site-sval">{(site.totalPageViews || 0).toLocaleString()}</div>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Visitors
-                    </p>
-                    <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
-                      {(site.uniqueVisitors || 0).toLocaleString()}
-                    </p>
+                    <div className="db-site-slbl">Visitors</div>
+                    <div className="db-site-sval">{(site.uniqueVisitors || 0).toLocaleString()}</div>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Bounce Rate
-                    </p>
-                    <p className="text-base sm:text-lg font-semibold text-slate-700 dark:text-slate-300">
-                      {site.bounceRate || 0}%
-                    </p>
+                    <div className="db-site-slbl">Bounce Rate</div>
+                    <div className="db-site-sval-sm">{site.bounceRate || 0}%</div>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Avg. Pages
-                    </p>
-                    <p className="text-base sm:text-lg font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="db-site-slbl">Avg Pages</div>
+                    <div className="db-site-sval-sm">
                       {site.uniqueVisitors > 0
-                        ? (
-                            (site.totalPageViews || 0) / site.uniqueVisitors
-                          ).toFixed(1)
+                        ? ((site.totalPageViews || 0) / site.uniqueVisitors).toFixed(1)
                         : "0.0"}
-                    </p>
+                    </div>
                   </div>
                 </div>
-
-                {/* Mini Chart */}
                 {site.timeSeriesData && site.timeSeriesData.length > 0 && (
-                  <div className="h-12 sm:h-16 flex items-end gap-1">
-                    {site.timeSeriesData.map(
-                      (day: TimeSeriesData, i: number) => {
-                        const maxViews = Math.max(
-                          ...site.timeSeriesData!.map(
-                            (d: TimeSeriesData) => d.views || 0
-                          ),
-                          1
-                        );
-                        const height = ((day.views || 0) / maxViews) * 100;
-                        return (
-                          <div
-                            key={i}
-                            className="flex-1 bg-blue-600 dark:bg-white rounded-t hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-                            style={{
-                              height: height > 0 ? `${height}%` : "4%",
-                              minHeight: "4px",
-                            }}
-                            title={`${day.views || 0} views`}
-                          />
-                        );
-                      }
-                    )}
+                  <div className="db-mini-chart">
+                    {site.timeSeriesData.map((day: TimeSeriesData, i: number) => {
+                      const maxViews = Math.max(...site.timeSeriesData!.map((d: TimeSeriesData) => d.views || 0), 1);
+                      const height = ((day.views || 0) / maxViews) * 100;
+                      return (
+                        <div
+                          key={i} className="db-mini-bar"
+                          style={{ height: height > 0 ? `${height}%` : "4%" }}
+                          title={`${day.views || 0} views`}
+                        />
+                      );
+                    })}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <BarChart3 className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-500 dark:text-slate-400 text-lg mb-2">
-              No analytics data yet
-            </p>
-            <p className="text-slate-400 dark:text-slate-500 text-sm">
-              Install tracking scripts to see your data
-            </p>
-          </div>
-        )}
+              </div>
+            ))
+          ) : (
+            <div className="db-empty" style={{ gridColumn: "1 / -1" }}>
+              <div className="db-empty-title">No analytics data yet</div>
+              <p className="db-empty-sub">Install tracking scripts to see your data</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function SingleSiteView({
-  data,
-  timeRange,
-}: {
-  data: SingleSiteData;
-  timeRange: string;
-}) {
+function SingleSiteView({ data, timeRange }: { data: SingleSiteData; timeRange: string }) {
   const totalPageViews = data.totalPageViews || 0;
   const uniqueVisitors = data.uniqueVisitors || 0;
   const bounceRate = data.bounceRate || 0;
@@ -649,387 +558,221 @@ function SingleSiteView({
   const timeSeriesData = data.timeSeriesData || [];
   const topBrowsers = data.topBrowsers || [];
 
-  const chartConfig = {
-    views: {
-      label: "Views",
-      color: "hsl(var(--chart-1))",
-    },
-  } satisfies ChartConfig;
-
-  const browserChartConfig = {
-    count: {
-      label: "Visitors",
-      color: "hsl(var(--chart-1))",
-    },
-  } satisfies ChartConfig;
+  const chartConfig = { views: { label: "Views", color: "#1C6B45" } } satisfies ChartConfig;
+  const timeLabel = timeRange === "24h" ? "Last 24 hours" : timeRange === "7d" ? "Last 7 days" : "Last 30 days";
+  const tickFormat = (v: string) => {
+    const date = new Date(v);
+    return timeRange === "24h"
+      ? date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+      : date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <MetricCard
-          icon={<Eye />}
-          label="Total Views"
-          value={totalPageViews.toLocaleString()}
-        />
-        <MetricCard
-          icon={<Users />}
-          label="Unique Visitors"
-          value={uniqueVisitors.toLocaleString()}
-        />
-        <MetricCard
-          icon={<MousePointer />}
-          label="Bounce Rate"
-          value={`${bounceRate}%`}
-        />
-        <MetricCard
-          icon={<Clock />}
-          label="Avg. Session"
-          value={
-            avgSessionDuration > 0
-              ? `${Math.floor(avgSessionDuration / 60)}m ${
-                  avgSessionDuration % 60
-                }s`
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div>
+        <div className="db-shdr">
+          <span className="db-slbl">Metrics — {timeLabel}</span>
+          <div className="db-sline" />
+        </div>
+        <div className="db-metrics">
+          <MetricCard label="Total Views" value={totalPageViews.toLocaleString()} />
+          <MetricCard label="Unique Visitors" value={uniqueVisitors.toLocaleString()} />
+          <MetricCard label="Bounce Rate" value={`${bounceRate}%`} />
+          <MetricCard
+            label="Avg Session"
+            value={avgSessionDuration > 0
+              ? `${Math.floor(avgSessionDuration / 60)}m ${avgSessionDuration % 60}s`
               : "0s"
-          }
-        />
+            }
+          />
+        </div>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Visitors Radial Chart */}
-        <Card className="flex flex-col">
-          <CardHeader className="items-center pb-0">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Unique Visitors
-            </CardTitle>
-            <CardDescription>
-              {timeRange === "24h"
-                ? "Last 24 hours"
-                : timeRange === "7d"
-                ? "Last 7 days"
-                : "Last 30 days"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 pb-0">
-            <ChartContainer
-              config={{
-                visitors: {
-                  label: "Visitors",
-                  color: "hsl(var(--chart-1))",
-                },
-              }}
-              className="mx-auto aspect-square max-h-[250px]"
-            >
-              <RadialBarChart
-                data={[
-                  {
-                    visitors: uniqueVisitors,
-                    fill: "hsl(var(--chart-1))",
-                  },
-                ]}
-                startAngle={90}
-                endAngle={90 + (uniqueVisitors > 0 ? 270 : 0)}
-                innerRadius={80}
-                outerRadius={140}
+      {/* Charts */}
+      <div>
+        <div className="db-shdr"><span className="db-slbl">Traffic</span><div className="db-sline" /></div>
+        <div className="db-charts">
+          {/* Radial */}
+          <div className="db-card">
+            <div className="db-card-hdr">
+              <div className="db-card-title">Unique Visitors</div>
+              <div className="db-card-desc">{timeLabel}</div>
+            </div>
+            <div className="db-card-body" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <ChartContainer
+                config={{ visitors: { label: "Visitors", color: "#1C6B45" } }}
+                className="mx-auto aspect-square max-h-[220px]"
               >
-                <PolarGrid
-                  gridType="circle"
-                  radialLines={false}
-                  stroke="none"
-                  className="first:fill-muted last:fill-background"
-                  polarRadius={[86, 74]}
-                />
-                <RadialBar dataKey="visitors" background cornerRadius={10} />
-                <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-                  <Label
-                    content={({ viewBox }) => {
-                      if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                        return (
-                          <text
-                            x={viewBox.cx}
-                            y={viewBox.cy}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                          >
-                            <tspan
-                              x={viewBox.cx}
-                              y={viewBox.cy}
-                              className="fill-foreground text-4xl font-bold"
-                            >
-                              {uniqueVisitors.toLocaleString()}
-                            </tspan>
-                            <tspan
-                              x={viewBox.cx}
-                              y={(viewBox.cy || 0) + 24}
-                              className="fill-muted-foreground"
-                            >
-                              Visitors
-                            </tspan>
-                          </text>
-                        );
-                      }
-                    }}
-                  />
-                </PolarRadiusAxis>
-              </RadialBarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Time Series Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Traffic Trend
-            </CardTitle>
-            <CardDescription>
-              {timeRange === "24h"
-                ? "Hourly views for the last 24 hours"
-                : timeRange === "7d"
-                ? "Daily views for the last 7 days"
-                : "Daily views for the last 30 days"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {timeSeriesData.length > 0 ? (
-              <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                <AreaChart data={timeSeriesData}>
-                  <defs>
-                    <linearGradient id="fillViews" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="5%"
-                        stopColor="var(--color-views)"
-                        stopOpacity={0.8}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="var(--color-views)"
-                        stopOpacity={0.1}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="date"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    minTickGap={32}
-                    tickFormatter={(value) => {
-                      const date = new Date(value);
-                      return timeRange === "24h"
-                        ? date.toLocaleTimeString("en-US", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : date.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          });
-                    }}
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        hideIndicator
-                        className="min-w-[180px]"
-                      />
-                    }
-                    cursor={false}
-                  />
-                  <Area
-                    dataKey="views"
-                    type="monotone"
-                    fill="url(#fillViews)"
-                    stroke="var(--color-views)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
+                <RadialBarChart
+                  data={[{ visitors: uniqueVisitors, fill: "#1C6B45" }]}
+                  startAngle={90}
+                  endAngle={90 + (uniqueVisitors > 0 ? 270 : 0)}
+                  innerRadius={70} outerRadius={110}
+                >
+                  <PolarGrid gridType="circle" radialLines={false} stroke="none"
+                    className="first:fill-muted last:fill-background" polarRadius={[76, 64]} />
+                  <RadialBar dataKey="visitors" background cornerRadius={6} />
+                  <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                    <Label
+                      content={({ viewBox }) => {
+                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                          return (
+                            <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                              <tspan
+                                x={viewBox.cx} y={viewBox.cy}
+                                style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.5rem", fontWeight: 600, fill: "var(--fg)" }}
+                              >
+                                {uniqueVisitors.toLocaleString()}
+                              </tspan>
+                              <tspan
+                                x={viewBox.cx} y={(viewBox.cy || 0) + 22}
+                                style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "0.5rem", letterSpacing: "0.1em", fill: "var(--muted)", textTransform: "uppercase" }}
+                              >
+                                Visitors
+                              </tspan>
+                            </text>
+                          );
+                        }
+                      }}
+                    />
+                  </PolarRadiusAxis>
+                </RadialBarChart>
               </ChartContainer>
-            ) : (
-              <div className="h-[250px] flex items-center justify-center text-slate-400">
-                No data available
+            </div>
+          </div>
+
+          {/* Area chart */}
+          <div className="db-card">
+            <div className="db-card-hdr">
+              <div className="db-card-title">Traffic Trend</div>
+              <div className="db-card-desc">
+                {timeRange === "24h" ? "Hourly" : "Daily"} views — {timeLabel}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+            <div className="db-card-body">
+              {timeSeriesData.length > 0 ? (
+                <ChartContainer config={chartConfig} className="h-[220px] w-full">
+                  <AreaChart data={timeSeriesData}>
+                    <defs>
+                      <linearGradient id="fillViews" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#1C6B45" stopOpacity={0.22} />
+                        <stop offset="95%" stopColor="#1C6B45" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis
+                      dataKey="date" tickLine={false} axisLine={false}
+                      tickMargin={8} minTickGap={32} tickFormatter={tickFormat}
+                      tick={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, fill: "var(--muted)", letterSpacing: "0.05em" }}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent hideIndicator className="min-w-[160px]" />} cursor={false} />
+                    <Area dataKey="views" type="monotone" fill="url(#fillViews)" stroke="#1C6B45" strokeWidth={1.5} />
+                  </AreaChart>
+                </ChartContainer>
+              ) : (
+                <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span className="db-slbl">No data available</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Second Row - Top Browsers */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6">
-        {/* Top Browsers */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5" />
-              Top Browsers
-            </CardTitle>
-            <CardDescription>Browser distribution by visitors</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {topBrowsers.length > 0 ? (
-              <div className="space-y-4">
-                {topBrowsers.map((browser: TopBrowser, i: number) => {
-                  const total = topBrowsers.reduce(
-                    (sum: number, b: TopBrowser) => sum + (b.count || 0),
-                    0
-                  );
-                  const percentage =
-                    total > 0
-                      ? ((browser.count / total) * 100).toFixed(1)
-                      : "0.0";
+      {/* Breakdown */}
+      <div>
+        <div className="db-shdr"><span className="db-slbl">Breakdown</span><div className="db-sline" /></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
+          {/* Browsers */}
+          <div className="db-card">
+            <div className="db-card-hdr">
+              <div className="db-card-title">Top Browsers</div>
+              <div className="db-card-desc">Distribution by visitors</div>
+            </div>
+            <div className="db-card-body">
+              {topBrowsers.length > 0 ? (
+                topBrowsers.map((browser: TopBrowser, i: number) => {
+                  const total = topBrowsers.reduce((sum: number, b: TopBrowser) => sum + (b.count || 0), 0);
+                  const pct = total > 0 ? ((browser.count / total) * 100).toFixed(1) : "0.0";
                   return (
-                    <div key={i}>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-slate-700">
-                          {browser.browser}
-                        </span>
-                        <span className="text-sm text-slate-500">
-                          {browser.count.toLocaleString()} ({percentage}%)
-                        </span>
+                    <div key={i} className="db-brow-row">
+                      <div className="db-brow-meta">
+                        <span className="db-brow-name">{browser.browser}</span>
+                        <span className="db-brow-count">{browser.count.toLocaleString()} · {pct}%</span>
                       </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-slate-900 rounded-full transition-all"
-                          style={{ width: `${percentage}%` }}
-                        />
+                      <div className="db-brow-track">
+                        <div className="db-brow-fill" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            ) : (
-              <div className="h-[250px] flex items-center justify-center text-slate-400">
-                No browser data
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                })
+              ) : (
+                <div style={{ padding: "32px 0", textAlign: "center" }}>
+                  <span className="db-slbl">No browser data</span>
+                </div>
+              )}
+            </div>
+          </div>
 
-      {/* Top Pages Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Top Pages
-          </CardTitle>
-          <CardDescription>Most visited pages on your site</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 dark:bg-slate-800">
-                <tr>
-                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase dark:text-white">
-                    Page
-                  </th>
-                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase dark:text-white">
-                    Views
-                  </th>
-                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs font-semibold text-slate-600 uppercase dark:text-white">
-                    Share
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {topPages.length > 0 ? (
-                  topPages.map((page: TopPage, i: number) => (
-                    <tr key={i} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 sm:px-6 py-3 sm:py-4">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-slate-100 text-xs font-bold text-slate-600">
-                            {i + 1}
-                          </span>
-                          <span className="font-medium text-slate-900 text-sm truncate">
-                            {page.path}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 font-semibold text-slate-900">
-                        {(page.count || 0).toLocaleString()}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 max-w-[120px] sm:max-w-[200px] h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-slate-900 rounded-full"
-                              style={{
-                                width:
-                                  totalPageViews > 0
-                                    ? `${
-                                        ((page.count || 0) / totalPageViews) *
-                                        100
-                                      }%`
-                                    : "0%",
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm text-slate-500 min-w-[40px]">
-                            {totalPageViews > 0
-                              ? (
-                                  ((page.count || 0) / totalPageViews) *
-                                  100
-                                ).toFixed(1)
-                              : "0.0"}
-                            %
-                          </span>
-                        </div>
+          {/* Top pages */}
+          <div className="db-card">
+            <div className="db-card-hdr">
+              <div className="db-card-title">Top Pages</div>
+              <div className="db-card-desc">Most visited pages on your site</div>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="db-tbl">
+                <thead>
+                  <tr>
+                    <th>Page</th>
+                    <th>Views</th>
+                    <th>Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topPages.length > 0 ? (
+                    topPages.map((page: TopPage, i: number) => {
+                      const pct = totalPageViews > 0
+                        ? (((page.count || 0) / totalPageViews) * 100).toFixed(1)
+                        : "0.0";
+                      return (
+                        <tr key={i}>
+                          <td>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <span className="db-tbl-idx">{i + 1}</span>
+                              <span className="db-tbl-path">{page.path}</span>
+                            </div>
+                          </td>
+                          <td><span className="db-tbl-val">{(page.count || 0).toLocaleString()}</span></td>
+                          <td>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div className="db-bar-track">
+                                <div className="db-bar-fill" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="db-bar-pct">{pct}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={3} style={{ textAlign: "center", padding: "32px 0" }}>
+                        <span className="db-slbl">No page data available yet</span>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className="px-4 sm:px-6 py-8 text-center text-slate-500"
-                    >
-                      No page data available yet
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
 
-function MetricCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-}) {
-  return (
-    <Card className="hover:shadow-md transition-shadow bg-white dark:bg-[#16161d] border-[#16161d] dark:border-white">
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex items-start justify-between mb-3 sm:mb-4">
-          <div className="p-2 sm:p-3 rounded-lg bg-slate-100 dark:bg-white">
-            <div className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-[#16161d]">
-              {icon}
-            </div>
-          </div>
-        </div>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-1">
-          {label}
-        </p>
-        <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">
-          {value}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
+/* ─── Export ─────────────────────────────────────────────── */
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
