@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/app/lib/supabase/client";
 import Link from "next/link";
-import { Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,147 +36,432 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-lg">
-        {/* Logo/Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-black dark:text-white mb-2">
-            Analytique
-          </h1>
-          <p className="text-zinc-600 dark:text-zinc-400">
-            Sign in to your analytics dashboard
-          </p>
-        </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
-        {/* Login Card */}
-        <div className="">
-          <form onSubmit={handleLogin} className="space-y-6">
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20  p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-red-800 dark:text-red-400 text-sm font-medium">
-                    Authentication Failed
-                  </p>
-                  <p className="text-red-600 dark:text-red-300 text-xs mt-1">
-                    {error}
-                  </p>
-                </div>
-              </div>
-            )}
+        :root {
+          --bg: #F6F5F1;
+          --fg: #0D0D0B;
+          --accent: #1C6B45;
+          --accent-light: #E8F5EE;
+          --muted: #7A7A72;
+          --border: #E0DED7;
+          --card-bg: #FFFFFF;
+          --input-bg: #FAFAF8;
+          --error-bg: #FEF2F2;
+          --error-border: #FECACA;
+          --error-text: #991B1B;
+          --error-sub: #B91C1C;
+        }
 
-            {/* Email Input */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-              >
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg 
-                  text-black dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 
-                  focus:ring-black dark:focus:ring-white focus:border-transparent transition-all"
-                placeholder="you@example.com"
-              />
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --bg: #0D0D0B;
+            --fg: #F6F5F1;
+            --accent: #3DD68C;
+            --accent-light: #0D2B1E;
+            --muted: #8A8A82;
+            --border: #222220;
+            --card-bg: #141412;
+            --input-bg: #1A1A18;
+            --error-bg: #1F0808;
+            --error-border: #7F1D1D;
+            --error-text: #FCA5A5;
+            --error-sub: #F87171;
+          }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .auth-root {
+          min-height: 100vh;
+          background-color: var(--bg);
+          color: var(--fg);
+          font-family: 'DM Sans', sans-serif;
+          font-weight: 300;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .auth-root::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+          background-size: 28px 28px;
+          pointer-events: none;
+          z-index: 0;
+          opacity: 0.7;
+        }
+
+        /* Nav strip */
+        .auth-nav {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 24px 40px;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .auth-logo {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.15rem;
+          font-weight: 600;
+          color: var(--fg);
+          text-decoration: none;
+          letter-spacing: -0.02em;
+        }
+
+        .auth-back {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--muted);
+          text-decoration: none;
+          transition: color 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .auth-back:hover { color: var(--fg); }
+
+        /* Main centered content */
+        .auth-main {
+          position: relative;
+          z-index: 1;
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+        }
+
+        .auth-panel {
+          width: 100%;
+          max-width: 420px;
+        }
+
+        /* Header */
+        .auth-header {
+          margin-bottom: 36px;
+        }
+
+        .auth-kicker {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--accent);
+          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .auth-kicker::before {
+          content: '';
+          display: block;
+          width: 16px;
+          height: 1px;
+          background: var(--accent);
+        }
+
+        .auth-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 2rem;
+          font-weight: 600;
+          letter-spacing: -0.03em;
+          color: var(--fg);
+          margin-bottom: 8px;
+          line-height: 1.1;
+        }
+
+        .auth-sub {
+          font-size: 0.875rem;
+          color: var(--muted);
+          line-height: 1.6;
+        }
+
+        /* Card */
+        .auth-card {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 4px;
+          padding: 32px;
+        }
+
+        /* Error */
+        .auth-error {
+          background: var(--error-bg);
+          border: 1px solid var(--error-border);
+          border-radius: 3px;
+          padding: 14px 16px;
+          margin-bottom: 24px;
+        }
+
+        .auth-error-title {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--error-text);
+          margin-bottom: 4px;
+          font-weight: 500;
+        }
+
+        .auth-error-msg {
+          font-size: 0.8rem;
+          color: var(--error-sub);
+          line-height: 1.5;
+        }
+
+        /* Field */
+        .field {
+          margin-bottom: 20px;
+        }
+
+        .field-label {
+          display: block;
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--muted);
+          margin-bottom: 8px;
+        }
+
+        .field-input {
+          width: 100%;
+          padding: 12px 14px;
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 3px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.9rem;
+          font-weight: 400;
+          color: var(--fg);
+          outline: none;
+          transition: border-color 0.2s;
+          -webkit-appearance: none;
+        }
+        .field-input::placeholder { color: var(--muted); opacity: 0.6; }
+        .field-input:focus { border-color: var(--accent); }
+
+        .field-password-wrap {
+          position: relative;
+        }
+        .field-password-wrap .field-input {
+          padding-right: 48px;
+        }
+
+        .toggle-btn {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
+          color: var(--muted);
+          transition: color 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .toggle-btn:hover { color: var(--fg); }
+
+        .toggle-btn svg {
+          width: 16px;
+          height: 16px;
+          stroke: currentColor;
+          fill: none;
+          stroke-width: 1.8;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        /* Submit */
+        .submit-btn {
+          width: 100%;
+          margin-top: 28px;
+          padding: 13px 20px;
+          background: var(--fg);
+          color: var(--bg);
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.875rem;
+          font-weight: 500;
+          border: none;
+          border-radius: 3px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: opacity 0.2s;
+          letter-spacing: 0.01em;
+        }
+        .submit-btn:hover:not(:disabled) { opacity: 0.78; }
+        .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .spinner {
+          width: 14px;
+          height: 14px;
+          border: 1.5px solid currentColor;
+          border-top-color: transparent;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          opacity: 0.6;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Divider */
+        .auth-divider {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin: 24px 0;
+        }
+        .auth-divider-line {
+          flex: 1;
+          height: 1px;
+          background: var(--border);
+        }
+        .auth-divider-text {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 0.6rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--muted);
+          white-space: nowrap;
+        }
+
+        /* Secondary link */
+        .auth-link-btn {
+          display: block;
+          width: 100%;
+          text-align: center;
+          padding: 12px 20px;
+          background: transparent;
+          border: 1px solid var(--border);
+          border-radius: 3px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.875rem;
+          font-weight: 400;
+          color: var(--fg);
+          text-decoration: none;
+          transition: border-color 0.2s;
+        }
+        .auth-link-btn:hover { border-color: var(--fg); }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+          .auth-nav { padding: 18px 20px; }
+          .auth-card { padding: 24px 20px; }
+          .auth-title { font-size: 1.7rem; }
+        }
+      `}</style>
+
+      <div className="auth-root">
+        {/* Nav */}
+        <nav className="auth-nav">
+          <Link href="/" className="auth-logo">Analytique</Link>
+          <Link href="/" className="auth-back">← Home</Link>
+        </nav>
+
+        {/* Main */}
+        <main className="auth-main">
+          <div className="auth-panel">
+            <div className="auth-header">
+              <div className="auth-kicker">Welcome back</div>
+              <h1 className="auth-title">Sign in to<br />your account</h1>
+              <p className="auth-sub">Access your analytics dashboard and track what matters.</p>
             </div>
 
-            {/* Password Input */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg 
-                    text-black dark:text-white placeholder-zinc-500 focus:outline-none focus:ring-2 
-                    focus:ring-black dark:focus:ring-white focus:border-transparent transition-all pr-12"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
+            <div className="auth-card">
+              {error && (
+                <div className="auth-error">
+                  <div className="auth-error-title">Authentication Failed</div>
+                  <div className="auth-error-msg">{error}</div>
+                </div>
+              )}
+
+              <form onSubmit={handleLogin}>
+                <div className="field">
+                  <label htmlFor="email" className="field-label">Email Address</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="field-input"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="password" className="field-label">Password</label>
+                  <div className="field-password-wrap">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="field-input"
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      className="toggle-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <svg viewBox="0 0 24 24">
+                          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                          <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <button type="submit" disabled={loading} className="submit-btn">
+                  {loading ? (
+                    <><div className="spinner" /> Signing in...</>
                   ) : (
-                    <Eye className="w-5 h-5" />
+                    "Sign In →"
                   )}
                 </button>
+              </form>
+
+              <div className="auth-divider">
+                <div className="auth-divider-line" />
+                <span className="auth-divider-text">No account yet?</span>
+                <div className="auth-divider-line" />
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-black dark:bg-white text-white dark:text-black font-semibold 
-                py-3 px-6 rounded-full transition-all hover:opacity-80
-                disabled:opacity-50 disabled:cursor-not-allowed flex items-center 
-                justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 dark:border-black/30 border-t-white dark:border-t-black rounded-full animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-5 h-5" />
-                  Sign In
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-zinc-200 dark:border-zinc-800"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
-                Dont have an account?
-              </span>
+              <Link href="/auth/signup" className="auth-link-btn">
+                Create Account
+              </Link>
             </div>
           </div>
-
-          {/* Sign Up Link */}
-          <Link
-            href="/auth/signup"
-            className="block w-full text-center py-3 px-6 border border-zinc-300 dark:border-zinc-700 
-              rounded-full text-black dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 
-              transition-all font-medium"
-          >
-            Create an Account
-          </Link>
-        </div>
-
-        {/* Back to Home */}
-        <div className="text-center mt-6">
-          <Link
-            href="/"
-            className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
-          >
-            ← Back to Home
-          </Link>
-        </div>
+        </main>
       </div>
-    </div>
+    </>
   );
 }
