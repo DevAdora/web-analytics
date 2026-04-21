@@ -1,4 +1,3 @@
-// components/ThemeToggle.tsx
 "use client";
 
 import { useTheme } from "./ThemeProvider";
@@ -105,7 +104,6 @@ export function ThemeToggle() {
   );
 }
 
-/* Simple cycle toggle — single button, no dropdown */
 export function ThemeToggleSimple() {
   const { theme, setTheme } = useTheme();
 
@@ -132,7 +130,6 @@ export function ThemeToggleSimple() {
   );
 }
 
-/* Button group — shows all three options inline */
 export function ThemeToggleGroup() {
   const { theme, setTheme } = useTheme();
 
