@@ -509,11 +509,11 @@ export default function Layout({ children }) {
                   <div className="install-step">
                     <div className="install-step-label">Step 2 — Framework example</div>
                     <div className="example-block">
-                      <div class="example-block-label" style="padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-                        <span class="example-block-dot" style="width:5px;height:5px;border-radius:50%;background:var(--accent);"></span>
+                      <div className="example-block-label">
+                        <span className="example-block-dot" />
                         Next.js · app/layout.tsx
                       </div>
-                      <pre style="padding:14px 16px;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:.72rem;line-height:1.75;color:var(--fg);">{getNextjsExample(newSite.siteId)}</pre>
+                      <pre>{getNextjsExample(newSite.siteId)}</pre>
                     </div>
                   </div>
 
